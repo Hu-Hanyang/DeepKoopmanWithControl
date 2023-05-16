@@ -4,7 +4,7 @@ import random
 from scipy.integrate import odeint
 import scipy.linalg
 from copy import copy
-from rbf import rbf
+from utility.rbf import rbf
 from gym import spaces
 import sys
 sys.path.append("../franka")

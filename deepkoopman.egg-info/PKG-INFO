@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: deepkoopman
+Version: 0.0
+Summary: Reimplementation of the DeepKoopman
+Author: Hanyang Hu
+Author-email: hha160@sfu.ca
+License: MIT
+License-File: LICENSE

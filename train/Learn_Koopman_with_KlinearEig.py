@@ -10,10 +10,10 @@ from copy import copy
 import argparse
 import os
 from torch.utils.tensorboard import SummaryWriter
-import sys
-sys.path.append("../utility/")
+# import sys
+# sys.path.append("../utility/")
 from scipy.integrate import odeint
-from Utility import data_collecter
+from utility.Utility import data_collecter
 import time
 #define network
 def gaussian_init_(n_units, std=1):    
@@ -118,9 +118,9 @@ def train(env_name,train_steps = 200000,suffix="",all_loss=0,\
     u_dim = data_collect.udim
     Ktest_data = data_collect.collect_koopman_data(Ktest_samples,Ksteps,mode="eval")
     Ktest_samples = Ktest_data.shape[1]
-    print("test data ok!,shape:",Ktest_data.shape)
+    print("test data ok!,shape:",Ktest_data.shape)  # (16, 20000, 5)
     Ktrain_data = data_collect.collect_koopman_data(Ktrain_samples,Ksteps,mode="train")
-    print("train data ok!,shape:",Ktrain_data.shape)
+    print("train data ok!,shape:",Ktrain_data.shape)  # shape: (16, 50000, 5)
     Ktrain_samples = Ktrain_data.shape[1]
     in_dim = Ktest_data.shape[-1]-u_dim
     Nstate = in_dim

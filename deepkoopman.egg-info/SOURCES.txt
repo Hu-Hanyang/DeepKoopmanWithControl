@@ -1,0 +1,17 @@
+LICENSE
+README.md
+setup.py
+deepkoopman.egg-info/PKG-INFO
+deepkoopman.egg-info/SOURCES.txt
+deepkoopman.egg-info/dependency_links.txt
+deepkoopman.egg-info/top_level.txt
+train/Learn_Knonlinear.py
+train/Learn_Knonlinear_RNN.py
+train/Learn_KoopmanNonlinearA_with_KlinearEig.py
+train/Learn_KoopmanNonlinear_with_KlinearEig.py
+train/Learn_Koopman_with_KlinearEig.py
+train/Learn_Koopman_with_Klinear_Franka.py
+utility/Utility.py
+utility/lqr.py
+utility/pyecosqp.py
+utility/rbf.py
