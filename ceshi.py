@@ -5,6 +5,6 @@ import os
 env = gym.make("CartPole-v1")
 obs = env.reset()
 print(obs)
-# print(env.action_space.shape[0])
-# print(env.observation_space)
+print(env.action_space)
+print(env.observation_space)
 

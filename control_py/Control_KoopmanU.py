@@ -285,10 +285,17 @@ def Prepare_LQR(env_name):
     R = np.matrix(R)
     return Q,R,reset_state,x_ref
 
-print("Let the control task begins: \n")
+print("Let the control task begin: \n")
 Ad = state_dict['lA.weight'].cpu().numpy()
 Bd = state_dict['lB.weight'].cpu().numpy()
+
 env = Data_collect.env
+
+# env = gym.make("CartPole-v1")  # , render_mode="human"
+# env.seed(2022)
+
+env = gym.wrappers.RecordVideo(env, video_folder='videos', video_length=200, name_prefix="DKUC")
+
 env.reset()
 Ad = np.matrix(Ad)
 Bd = np.matrix(Bd)
@@ -317,6 +324,7 @@ for i in range(steps):
     observation_list.append(x0[:Nstate].reshape(-1,1))
     u_list.append(u)
     # time.sleep(0.1)
+env.close()
 
 observations = np.concatenate(observation_list,axis=1)
 u_list = np.array(u_list).reshape(-1)
