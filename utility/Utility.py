@@ -6,6 +6,7 @@ import scipy.linalg
 from copy import copy
 from utility.rbf import rbf
 from gym import spaces
+import dmc2gym
 import sys
 sys.path.append("../franka")
 #data collect
@@ -260,6 +261,14 @@ class data_collecter():
             self.uval = 20
             self.udim = 7
             self.reset_joint_state = np.array(self.env.reset_joint_state)
+        elif self.env_name == "CartPole-dm":
+            # add the CartPole from dm_control
+            print(f"The environment is the CartPole from dm_control.")
+            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)
+            self.udim = self.env.action_space.shape[0]
+            self.Nstates = self.env.observation_space.shape[0]
+            self.umin = self.env.action_space.low  # -1
+            self.umax = self.env.action_space.high  # +1
         else:
             self.env = gym.make(env_name)
             self.env.seed(2022)
@@ -270,7 +279,10 @@ class data_collecter():
         if not self.env_name.endswith("Snake"):
             self.observation_space = self.env.observation_space
             self.env.reset()
-            self.dt = self.env.dt
+            if self.env_name == "CartPole-dm":
+                self.dt = 0.02  # from gym CartPole self.tau, seconds between state updates
+            else:
+                self.dt = self.env.dt
 
     def random_state(self):
         if self.env_name.startswith("DampingPendulum"):
