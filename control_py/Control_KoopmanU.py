@@ -21,8 +21,11 @@ Methods = ["KoopmanDerivative","KoopmanRBF",\
 
 # select the method and the env
 method_index = 4
-suffix = "test"
-env_name = "CartPole-v1"
+# Step1: choose the env and suffix
+# suffix = "test"
+# env_name = "CartPole-v1"
+suffix = "dm_control"
+env_name = "CartPole-dm"
 # suffix = "Pendulum1_26"
 # env_name = "Pendulum-v1"
 # suffix = "5_2"
@@ -72,63 +75,63 @@ device = torch.device("cpu")
 net.cpu()
 net.double()
 
-def Prepare_Region_LQR(env_name,precision = 0.1):
-    x_ref = np.zeros(Nstate)
-    if env_name.startswith("CartPole"):
-        Q = np.zeros((NKoopman,NKoopman))
-        Q[1,1] = 0.01
-        Q[2,2] = 5.0
-        Q[3,3] = 0.01
-        R = np.eye(1)
-        theta_region = np.arange(-2.0,2.0,precision)
-        dtheta_region = np.arange(-2.0,2.0,precision)
-        reset_state_list = []
-        for theta in theta_region:
-            for dtheta in dtheta_region:
-                reset_state_list.append([0.0,0.0,theta,dtheta])
-    elif env_name.startswith("Pendulum"):
-        Q = np.zeros((NKoopman,NKoopman))
-        Q[0,0] = 5.0
-        Q[1,1] = 0.01
-        R = np.eye(1)
-        theta_region = np.arange(-6.0,6.0,precision)
-        dtheta_region = np.arange(-6.0,6.0,precision)
-        reset_state_list = []
-        for theta in theta_region:
-            for dtheta in dtheta_region:
-                reset_state_list.append([theta,dtheta])
-    elif env_name.startswith("DampingPendulum"):
-        Q = np.zeros((NKoopman,NKoopman))
-        Q[0,0] = 5.0
-        Q[1,1] = 0.01
-        R = np.eye(1)
-        theta_region = np.arange(-4.0,4.0,precision)
-        dtheta_region = np.arange(-4.0,4.0,precision)
-        reset_state_list = []
-        for theta in theta_region:
-            for dtheta in dtheta_region:
-                reset_state_list.append([theta,dtheta])
-    elif env_name.startswith("MountainCarContinuous"):
-        Q = np.zeros((NKoopman,NKoopman))
-        Q[0,0] = 5.0
-        Q[1,1] = 0.1
-        R = np.eye(1)
-        x_region = np.arange(-1.2,0.6,precision)
-        dx_region = np.arange(-1.0,1.0,precision)
-        reset_state_list = []
-        for x in x_region:
-            for dx in dx_region:
-                reset_state_list.append([x,dx])
-        x_ref[0] = 0.45
-    Q = np.matrix(Q)
-    R = np.matrix(R)
-    return Q,R,reset_state_list,x_ref
+# def Prepare_Region_LQR(env_name,precision = 0.1):
+#     x_ref = np.zeros(Nstate)
+#     if env_name.startswith("CartPole"):
+#         Q = np.zeros((NKoopman,NKoopman))
+#         Q[1,1] = 0.01
+#         Q[2,2] = 5.0
+#         Q[3,3] = 0.01
+#         R = np.eye(1)
+#         theta_region = np.arange(-2.0,2.0,precision)
+#         dtheta_region = np.arange(-2.0,2.0,precision)
+#         reset_state_list = []
+#         for theta in theta_region:
+#             for dtheta in dtheta_region:
+#                 reset_state_list.append([0.0,0.0,theta,dtheta])
+#     elif env_name.startswith("Pendulum"):
+#         Q = np.zeros((NKoopman,NKoopman))
+#         Q[0,0] = 5.0
+#         Q[1,1] = 0.01
+#         R = np.eye(1)
+#         theta_region = np.arange(-6.0,6.0,precision)
+#         dtheta_region = np.arange(-6.0,6.0,precision)
+#         reset_state_list = []
+#         for theta in theta_region:
+#             for dtheta in dtheta_region:
+#                 reset_state_list.append([theta,dtheta])
+#     elif env_name.startswith("DampingPendulum"):
+#         Q = np.zeros((NKoopman,NKoopman))
+#         Q[0,0] = 5.0
+#         Q[1,1] = 0.01
+#         R = np.eye(1)
+#         theta_region = np.arange(-4.0,4.0,precision)
+#         dtheta_region = np.arange(-4.0,4.0,precision)
+#         reset_state_list = []
+#         for theta in theta_region:
+#             for dtheta in dtheta_region:
+#                 reset_state_list.append([theta,dtheta])
+#     elif env_name.startswith("MountainCarContinuous"):
+#         Q = np.zeros((NKoopman,NKoopman))
+#         Q[0,0] = 5.0
+#         Q[1,1] = 0.1
+#         R = np.eye(1)
+#         x_region = np.arange(-1.2,0.6,precision)
+#         dx_region = np.arange(-1.0,1.0,precision)
+#         reset_state_list = []
+#         for x in x_region:
+#             for dx in dx_region:
+#                 reset_state_list.append([x,dx])
+#         x_ref[0] = 0.45
+#     Q = np.matrix(Q)
+#     R = np.matrix(R)
+#     return Q,R,reset_state_list,x_ref
 
-def Psi_o(s,net): # Evaluates basis functions Ψ(s(t_k))
-    psi = np.zeros([NKoopman,1])
-    ds = net.encode(torch.DoubleTensor(s)).detach().cpu().numpy()
-    psi[:NKoopman,0] = ds
-    return psi
+# def Psi_o(s,net): # Evaluates basis functions Ψ(s(t_k))
+#     psi = np.zeros([NKoopman,1])
+#     ds = net.encode(torch.DoubleTensor(s)).detach().cpu().numpy()
+#     psi[:NKoopman,0] = ds
+#     return psi
 
 def Done(env_name,state):
     if env_name.startswith("CartPole"):
@@ -255,13 +258,22 @@ def Psi_o(s,net): # Evaluates basis functions Ψ(s(t_k))
 
 def Prepare_LQR(env_name):
     x_ref = np.zeros(Nstate)
-    if env_name.startswith("CartPole"):
-        Q = np.zeros((NKoopman,NKoopman))
-        Q[1,1] = 0.01
-        Q[2,2] = 5.0
-        Q[3,3] = 0.01
-        R = 0.001*np.eye(1)
-        reset_state=  [0.0,0.0,-0.3,0]
+    if env_name.startswith("CartPole"):  # "CartPole-v1", "CartPole-dm"
+        if env_name == "CartPole-dm":
+            # the state dimension is 5
+            Q = np.zeros((NKoopman,NKoopman))
+            Q[1,1] = 0.01
+            Q[2,2] = 5.0
+            Q[3,3] = 0.01
+            R = 0.001*np.eye(1)
+            reset_state=  [0.0,0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
+        else:
+            Q = np.zeros((NKoopman,NKoopman))
+            Q[1,1] = 0.01
+            Q[2,2] = 5.0
+            Q[3,3] = 0.01
+            R = 0.001*np.eye(1)
+            reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, cart velocity, pole angle, pole angular velocity], original: [0.0, 0.0,-0.3, 0]
     elif env_name.startswith("Pendulum"):
         Q = np.zeros((NKoopman,NKoopman))
         Q[0,0] = 5.0
@@ -289,21 +301,23 @@ print("Let the control task begin: \n")
 Ad = state_dict['lA.weight'].cpu().numpy()
 Bd = state_dict['lB.weight'].cpu().numpy()
 
+# Step2: name the video
 env = Data_collect.env
-
-# env = gym.make("CartPole-v1")  # , render_mode="human"
-# env.seed(2022)
-
-env = gym.wrappers.RecordVideo(env, video_folder='videos', video_length=200, name_prefix="DKUC")
-
+env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
 env.reset()
+
 Ad = np.matrix(Ad)
 Bd = np.matrix(Bd)
-Q,R,reset_state,x_ref = Prepare_LQR(env_name)
+Q, R, reset_state, x_ref = Prepare_LQR(env_name)
 # print(f"The Q matrix is: \n {Q}; \n The R metrix is {R}. \n")
 Kopt = lqr_regulator_k(Ad,Bd,Q,R)
 observation_list = []
-observation = env.reset_state(reset_state)  # convert x0 to z0
+
+# Step3: choose the observation to circumvent the reset_state() function
+# observation = env.reset_state(reset_state)  # for "CartPole-v1"
+observation = env.reset()  # for "CartPole-dm"
+
+# print(f"The reset_state is {observation}.")
 x0 = np.matrix(Psi_o(observation,net))
 x_ref_lift = Psi_o(x_ref,net)
 observation_list.append(x0[:Nstate].reshape(-1,1))
@@ -328,7 +342,7 @@ env.close()
 
 observations = np.concatenate(observation_list,axis=1)
 u_list = np.array(u_list).reshape(-1)
-time_history = np.arange(steps+1)*env.dt
+time_history = np.arange(steps+1)*0.02  # env.dt
 print(f"In {steps} steps, the total rewards is {rewards}.")
 for i in range(Nstate):
     plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
