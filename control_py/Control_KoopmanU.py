@@ -13,6 +13,10 @@ import scipy
 import scipy.linalg
 from utility.Utility import data_collecter
 from utility.lqr import *
+import cv2
+from PIL import Image
+import glob
+
 
 Methods = ["KoopmanDerivative","KoopmanRBF",\
             "KNonlinear","KNonlinearRNN","KoopmanU",\
@@ -34,7 +38,7 @@ env_name = "CartPole-dm"
 # env_name = "MountainCarContinuous-v0"
 
 method = Methods[method_index]
-root_path = "/localhome/hha160//projects/DeepKoopmanWithControl/Data/"+suffix
+root_path = "/localhome/hha160/projects/DeepKoopmanWithControl/Data/"+suffix
 print(f"The control method is {method}")
 if method.endswith("KNonlinear"):
     import train.Learn_Knonlinear as lka
@@ -133,82 +137,82 @@ net.double()
 #     psi[:NKoopman,0] = ds
 #     return psi
 
-def Done(env_name,state):
-    if env_name.startswith("CartPole"):
-        done = (abs(state[2]) >= np.pi)
-    if env_name.startswith("Pendulum"):
-        done = (abs(state[0]) >= 2*np.pi)
-    if env_name.startswith("DampingPendulum"):
-        done = (abs(state[0]) >= 2*np.pi)
-    if env_name.startswith("MountainCarContinuous"):
-        done = (state[0]>0.7 or state[0]<-1.3)
-    return done 
+# def Done(env_name,state):
+#     if env_name.startswith("CartPole"):
+#         done = (abs(state[2]) >= np.pi)
+#     if env_name.startswith("Pendulum"):
+#         done = (abs(state[0]) >= 2*np.pi)
+#     if env_name.startswith("DampingPendulum"):
+#         done = (abs(state[0]) >= 2*np.pi)
+#     if env_name.startswith("MountainCarContinuous"):
+#         done = (state[0]>0.7 or state[0]<-1.3)
+#     return done 
 
-def exp(env,env_name,net,Ad,Bd,Q,R,reset_state,x_ref):
-    Kopt = lqr_regulator_k(Ad,Bd,Q,R)
-    observation_list = []
-    observation = np.array(env.reset_state(reset_state))
-    x0 = np.matrix(Psi_o(observation,net)).reshape(NKoopman,1)
-    x_ref_lift = Psi_o(x_ref,net).reshape(NKoopman,1)
-    observation_list.append(x0[:Nstate].reshape(-1,1))
-    u_list = []
-    steps = 200
-    flag = False
-    for i in range(steps):
-        u = -Kopt*(x0-x_ref_lift)
-        observation, reward, done, info = env.step(u[0,0])
-        done = Done(env_name,observation)
-        if done:
-            flag = True
-            break
-        x0 = np.matrix(Psi_o(observation,net)).reshape(NKoopman,1)
-        observation_list.append(x0[:Nstate].reshape(-1,1))
-        u_list.append(u)
-    u_list = np.array(u_list).reshape(-1)
-    observations = np.concatenate(observation_list,axis=1)
-    return observations,u_list,flag
+# def exp(env,env_name,net,Ad,Bd,Q,R,reset_state,x_ref):
+#     Kopt = lqr_regulator_k(Ad,Bd,Q,R)
+#     observation_list = []
+#     observation = np.array(env.reset_state(reset_state))
+#     x0 = np.matrix(Psi_o(observation,net)).reshape(NKoopman,1)
+#     x_ref_lift = Psi_o(x_ref,net).reshape(NKoopman,1)
+#     observation_list.append(x0[:Nstate].reshape(-1,1))
+#     u_list = []
+#     steps = 200
+#     flag = False
+#     for i in range(steps):
+#         u = -Kopt*(x0-x_ref_lift)
+#         observation, reward, done, info = env.step(u[0,0])
+#         done = Done(env_name,observation)
+#         if done:
+#             flag = True
+#             break
+#         x0 = np.matrix(Psi_o(observation,net)).reshape(NKoopman,1)
+#         observation_list.append(x0[:Nstate].reshape(-1,1))
+#         u_list.append(u)
+#     u_list = np.array(u_list).reshape(-1)
+#     observations = np.concatenate(observation_list,axis=1)
+#     return observations,u_list,flag
 
-def criterion(env_name,observations,flag):
-    if flag:
-        return 0
-    elif env_name.startswith("CartPole"):
-        err = np.mean(abs(observations[2:,195:]))
-        good = int(err <= 1e-2)
-    elif env_name.startswith("Pendulum"):
-        err = np.mean(abs(observations[:,195:]))
-        good = int(err <= 1e-2)        
-    elif env_name.startswith("DampingPendulum"):
-        err = np.mean(abs(observations[:,195:]))
-        good = int(err <= 1e-2)    
-    elif env_name.startswith("MountainCarContinuous"):
-        err = np.mean(abs(observations[0,195:]-0.45))+np.mean(abs(observations[1,195:]))
-        good = int(err <= 1e-2)      
-    return good
+# def criterion(env_name,observations,flag):
+#     if flag:
+#         return 0
+#     elif env_name.startswith("CartPole"):
+#         err = np.mean(abs(observations[2:,195:]))
+#         good = int(err <= 1e-2)
+#     elif env_name.startswith("Pendulum"):
+#         err = np.mean(abs(observations[:,195:]))
+#         good = int(err <= 1e-2)        
+#     elif env_name.startswith("DampingPendulum"):
+#         err = np.mean(abs(observations[:,195:]))
+#         good = int(err <= 1e-2)    
+#     elif env_name.startswith("MountainCarContinuous"):
+#         err = np.mean(abs(observations[0,195:]-0.45))+np.mean(abs(observations[1,195:]))
+#         good = int(err <= 1e-2)      
+#     return good
 
 
-def Err(env_name,observations,flag):
-    if flag:
-        return None
-    elif env_name.startswith("CartPole"):
-        err = np.mean(abs(observations[2:,195:]))
-    elif env_name.startswith("Pendulum"):
-        err = np.mean(abs(observations[:,195:]))
-    elif env_name.startswith("DampingPendulum"):
-        err = np.mean(abs(observations[:,195:]))
-    elif env_name.startswith("MountainCarContinuous"):
-        err = np.mean(abs(observations[0,195:]-0.45))+np.mean(abs(observations[1,195:]))
-    return err
+# def Err(env_name,observations,flag):
+#     if flag:
+#         return None
+#     elif env_name.startswith("CartPole"):
+#         err = np.mean(abs(observations[2:,195:]))
+#     elif env_name.startswith("Pendulum"):
+#         err = np.mean(abs(observations[:,195:]))
+#     elif env_name.startswith("DampingPendulum"):
+#         err = np.mean(abs(observations[:,195:]))
+#     elif env_name.startswith("MountainCarContinuous"):
+#         err = np.mean(abs(observations[0,195:]-0.45))+np.mean(abs(observations[1,195:]))
+#     return err
 
-def Cost(observations,u_list,Q,R,x_ref):
-    steps = observations.shape[1]
-    loss = 0
-    for s in range(steps):
-        if s!=steps-1:
-            ucost = np.dot(np.dot(u_list[s].T,R),u_list[s])
-            loss += ucost[0,0]
-        xcost = np.dot(np.dot((observations[:,s]-x_ref).T,Q),(observations[:,s]-x_ref))
-        loss += xcost[0,0]
-    return loss
+# def Cost(observations,u_list,Q,R,x_ref):
+#     steps = observations.shape[1]
+#     loss = 0
+#     for s in range(steps):
+#         if s!=steps-1:
+#             ucost = np.dot(np.dot(u_list[s].T,R),u_list[s])
+#             loss += ucost[0,0]
+#         xcost = np.dot(np.dot((observations[:,s]-x_ref).T,Q),(observations[:,s]-x_ref))
+#         loss += xcost[0,0]
+#     return loss
 
 # print("Plot the safe region:\n")
 # Ad = state_dict['lA.weight'].cpu().numpy()
@@ -265,9 +269,10 @@ def Prepare_LQR(env_name):
             Q[1,1] = 0.01
             Q[2,2] = 5.0
             Q[3,3] = 0.01
+            Q[4,4] = 0.01  # I add this
             R = 0.001*np.eye(1)
-            reset_state=  [0.0,0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
-        else:
+            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
+        else:  # "CartPole-v1"
             Q = np.zeros((NKoopman,NKoopman))
             Q[1,1] = 0.01
             Q[2,2] = 5.0
@@ -303,7 +308,7 @@ Bd = state_dict['lB.weight'].cpu().numpy()
 
 # Step2: name the video
 env = Data_collect.env
-env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
+# env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
 env.reset()
 
 Ad = np.matrix(Ad)
@@ -317,23 +322,23 @@ observation_list = []
 # observation = env.reset_state(reset_state)  # for "CartPole-v1"
 observation = env.reset()  # for "CartPole-dm"
 
-# print(f"The reset_state is {observation}.")
 x0 = np.matrix(Psi_o(observation,net))
-x_ref_lift = Psi_o(x_ref,net)
+x_ref_lift = Psi_o(x_ref, net)
 observation_list.append(x0[:Nstate].reshape(-1,1))
 # print(Kopt)
 u_list = []
 steps = 200
 # umax = 100
 rewards = 0.0
+images = []  # Step 4: to save the image of "CartPole-dm"
 for i in range(steps):
-    # env.render()
-    u = -Kopt*(x0-x_ref_lift)
+    images.append(env.render(mode="rgb_array"))
+    u = -Kopt*(x0 - x_ref_lift)
     # u = max(-umax,min(umax,u[0,0]))
     # print(type(u[0,0]),type(u))
     observation, reward, done, info = env.step(u[0,0])
     rewards += reward
-    x0 = np.matrix(Psi_o(observation,net))
+    x0 = np.matrix(Psi_o(observation, net))
     # x0 = Ad*x0+Bd*u
     observation_list.append(x0[:Nstate].reshape(-1,1))
     u_list.append(u)
@@ -344,9 +349,32 @@ observations = np.concatenate(observation_list,axis=1)
 u_list = np.array(u_list).reshape(-1)
 time_history = np.arange(steps+1)*0.02  # env.dt
 print(f"In {steps} steps, the total rewards is {rewards}.")
-for i in range(Nstate):
-    plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
-plt.grid(True)
-plt.title("LQR Regulator")
-plt.legend()
-plt.show()
+
+# for i in range(Nstate):
+#     plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
+# plt.grid(True)
+# plt.title("LQR Regulator")
+# plt.legend()
+# plt.show()
+
+# Step 5: generate video while using "CartPole-dm"
+# print(images[0].shape)
+# save images
+for i in range(len(images)):
+    image = images[i]
+    image = Image.fromarray(image, "RGB")
+    path = "/localhome/hha160/projects/DeepKoopmanWithControl/dm_images"
+    if not os.path.exists(path):
+        os.makedirs(path)
+    image.save(f"{path}/x{i}.png")
+
+img_array = []
+for filename in glob.glob('/localhome/hha160/projects/DeepKoopmanWithControl/dm_images/*.png'):
+    img = cv2.imread(filename)
+    height, width, layers = img.shape
+    size = (width,height)
+    img_array.append(img)
+out = cv2.VideoWriter('videos_dm/CartPole-dm.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, size)
+for i in range(len(img_array)):
+    out.write(img_array[i])
+out.release()

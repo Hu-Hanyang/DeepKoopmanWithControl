@@ -122,14 +122,14 @@ def train(env_name,train_steps = 200000,suffix="",all_loss=0,\
     Ktrain_data = data_collect.collect_koopman_data(Ktrain_samples,Ksteps,mode="train")
     print("train data ok!,shape:",Ktrain_data.shape)  # shape: (16, 50000, 5)
     Ktrain_samples = Ktrain_data.shape[1]
-    in_dim = Ktest_data.shape[-1]-u_dim
+    in_dim = Ktest_data.shape[-1] - u_dim
     Nstate = in_dim
     # layer_depth = 4
     layer_width = 128
     layers = [in_dim]+[layer_width]*layer_depth+[encode_dim]
     Nkoopman = in_dim+encode_dim
     print("layers:",layers)
-    net = Network(layers,Nkoopman,u_dim)
+    net = Network(layers, Nkoopman, u_dim)
     # print(net.named_modules())
     eval_step = 1000
     learning_rate = 1e-3

@@ -266,7 +266,7 @@ class data_collecter():
             print(f"The environment is the CartPole from dm_control.")
             self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)
             self.udim = self.env.action_space.shape[0]
-            self.Nstates = self.env.observation_space.shape[0]
+            self.Nstates = self.env.observation_space.shape[0]  # 5
             self.umin = self.env.action_space.low  # -1
             self.umax = self.env.action_space.high  # +1
         else:
@@ -351,7 +351,7 @@ class data_collecter():
                     train_data_now[:,j,:] = traj_data[j*(steps+1):(j+1)*(steps+1),:17]
                 train_data.append(train_data_now)
             train_data = np.concatenate(train_data,axis=1)            
-        else:
+        else:  # "CartPole"
             for traj_i in range(traj_num):
                 s0 = self.env.reset()
                 # s0 = self.random_state()

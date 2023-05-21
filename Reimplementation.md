@@ -17,12 +17,13 @@ python Learn_Koopman_with_KlinearEig.py  --env="CartPole-v1" --suffix="test"
 tensorboard --logdir=Data/test
 
 # "CartPole-dm"
-KoopCartpoleDM
+tmux: KoopCartpoleDM
+
 ATTENTION:
 I have to block out the limitation of control signal in "/localhome/hha160/anaconda3/envs/koopman/lib/python3.7/site-packages/dmc2gym/wrappers.py" line 147 and line 149.
 
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control"
 
-tensorboard --logdir=Data/test
+tensorboard --logdir=Data/dm_control
 
 
