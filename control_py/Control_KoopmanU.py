@@ -29,7 +29,7 @@ method_index = 4
 # Step1: choose the env and suffix
 # suffix = "test"
 # env_name = "CartPole-v1"
-suffix = "dm_control_u2"
+suffix = "dm_control_test"
 env_name = "CartPole-dm"
 # suffix = "Pendulum1_26"
 # env_name = "Pendulum-v1"
