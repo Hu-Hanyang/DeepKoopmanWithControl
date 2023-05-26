@@ -17,6 +17,8 @@ from utility.lqr import *
 import cv2
 from PIL import Image
 import glob
+import scipy.linalg as linalg
+
 
 
 Methods = ["KoopmanDerivative","KoopmanRBF",\
@@ -317,7 +319,10 @@ Ad = np.matrix(Ad)
 Bd = np.matrix(Bd)
 Q, R, reset_state, x_ref = Prepare_LQR(env_name)
 # print(f"The Q matrix is: \n {Q}; \n The R metrix is {R}. \n")
-Kopt = lqr_regulator_k(Ad,Bd,Q,R)
+# Kopt = lqr_regulator_k(Ad,Bd,Q,R)  # original one
+P = linalg.solve_continuous_are(Ad, Bd, Q, R)
+Kopt = np.dot(np.linalg.inv(R), np.dot(Bd.T, P))
+
 observation_list = []
 
 # Step3: choose the observation to circumvent the reset_state() function

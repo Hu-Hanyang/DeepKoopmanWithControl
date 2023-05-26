@@ -91,8 +91,7 @@ from scipy import linalg
 P = linalg.solve_continuous_are(A, B, Q, R)
 
 # calculate optimal controller gain
-K = np.dot(np.linalg.inv(R),
-           np.dot(B.T, P))
+K = np.dot(np.linalg.inv(R), np.dot(B.T, P))
 def ulqr(x):
     # feedback controller, x.shaoe = (5,)
 	x_reshape = np.array([x[0], np.arccos(x[1]), x[3], x[4]])
