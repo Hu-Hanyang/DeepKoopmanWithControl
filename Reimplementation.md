@@ -19,6 +19,8 @@ tensorboard --logdir=Data/test
 # "CartPole-dm"
 tmux: KoopCartpoleDM
 
+1. run with original codes
+
 ATTENTION:
 I have to block out the limitation of control signal in "/localhome/hha160/anaconda3/envs/koopman/lib/python3.7/site-packages/dmc2gym/wrappers.py" line 147 and line 149.
 
@@ -26,4 +28,20 @@ python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_contro
 
 tensorboard --logdir=Data/dm_control
 
+2. change the method collect_koopman_data in Utility.py to generate good control inputs
 
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_u"
+
+change the K to:
+tmux a -t KoopTest
+K = - Rinv @ B.T @ P  # control_swingup.py, line 45
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_u2"
+
+3. Use the pid controller  (control_swingup.py) and save the training data as images and gif
+
+tmux a -t KoopTest
+
+ATTENTION for shortening time, shrink the size 100 times:
+train_steps = 200000, Ktrain_samples=50000,Ktest_samples = 20000
+
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test" 

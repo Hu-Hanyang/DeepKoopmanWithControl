@@ -8,6 +8,9 @@ from utility.rbf import rbf
 from gym import spaces
 import dmc2gym
 import sys
+from utility.control_swingup import ulqr, upid, rebuild_state
+from PIL import Image, ImageDraw
+import imageio
 sys.path.append("../franka")
 #data collect
 
@@ -264,12 +267,12 @@ class data_collecter():
         elif self.env_name == "CartPole-dm":
             # add the CartPole from dm_control
             print(f"The environment is the CartPole from dm_control.")
-            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)
+            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, height=80, width=80, camera_id=0, visualize_reward=False, from_pixels=True)  # seed=2022, visualize_reward=False, from_pixels=True
             self.udim = self.env.action_space.shape[0]
-            self.Nstates = self.env.observation_space.shape[0]  # 5
+            self.Nstates = 5  # 5
             self.umin = self.env.action_space.low  # -1
             self.umax = self.env.action_space.high  # +1
-        else:
+        else:  # CartPole-v1 from gym
             self.env = gym.make(env_name)
             self.env.seed(2022)
             self.udim = self.env.action_space.shape[0]
@@ -277,11 +280,13 @@ class data_collecter():
             self.umin = self.env.action_space.low
             self.umax = self.env.action_space.high
         if not self.env_name.endswith("Snake"):
-            self.observation_space = self.env.observation_space
+            # self.observation_space = self.env.observation_space
             self.env.reset()
             if self.env_name == "CartPole-dm":
+                self.observation_space = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False).observation_space
                 self.dt = 0.02  # from gym CartPole self.tau, seconds between state updates
             else:
+                self.observation_space = self.env.observation_space
                 self.dt = self.env.dt
 
     def random_state(self):
@@ -313,7 +318,8 @@ class data_collecter():
             s0 = np.array([x0,th0,th1,dx0,dth0,dth1]) 
         return np.array(s0)
 
-    def collect_koopman_data(self,traj_num,steps,mode="train"):
+    def collect_koopman_data(self, traj_num, steps, mode="train"):
+        # traj_num = 50000, steps = 15
         train_data = np.empty((steps+1,traj_num,self.Nstates+self.udim))
         if self.env_name.startswith("Franka"):
             for traj_i in range(traj_num):
@@ -350,7 +356,30 @@ class data_collecter():
                 for j in range(traj_num):
                     train_data_now[:,j,:] = traj_data[j*(steps+1):(j+1)*(steps+1),:17]
                 train_data.append(train_data_now)
-            train_data = np.concatenate(train_data,axis=1)            
+            train_data = np.concatenate(train_data,axis=1)   
+        elif self.env_name == "CartPole-dm" :
+            print("Generate Koopman data for CartPole-dm now!")
+            for traj_i in range(traj_num):
+                frames = []
+                duration = 0.2
+                image0 = self.env.reset()
+                frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
+
+                s0 = rebuild_state(self.env.physics.get_state()) # s0.shape = (5,)
+                # s0 = self.random_state()
+                u10 = upid(s0)  # np.random.uniform(self.umin, self.umax)
+                # print(u10)
+                # self.env.reset_state(s0)
+                train_data[0,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
+                for i in range(1,steps+1):
+                    next_image, r, done,_ = self.env.step(u10)
+                    frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
+
+                    s0 = rebuild_state(self.env.physics.get_state())
+                    u10 = upid(s0)  # np.random.uniform(self.umin, self.umax)
+                    train_data[i,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
+                imageio.mimsave(f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/traj{traj_i}.gif', frames, duration=duration)
+                
         else:  # "CartPole"
             for traj_i in range(traj_num):
                 s0 = self.env.reset()

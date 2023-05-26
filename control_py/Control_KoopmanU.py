@@ -12,6 +12,7 @@ from copy import copy
 import scipy
 import scipy.linalg
 from utility.Utility import data_collecter
+import dmc2gym
 from utility.lqr import *
 import cv2
 from PIL import Image
@@ -28,7 +29,7 @@ method_index = 4
 # Step1: choose the env and suffix
 # suffix = "test"
 # env_name = "CartPole-v1"
-suffix = "dm_control"
+suffix = "dm_control_u2"
 env_name = "CartPole-dm"
 # suffix = "Pendulum1_26"
 # env_name = "Pendulum-v1"
@@ -269,7 +270,7 @@ def Prepare_LQR(env_name):
             Q[1,1] = 0.01
             Q[2,2] = 5.0
             Q[3,3] = 0.01
-            Q[4,4] = 0.01  # I add this
+            # Q[4,4] = 0.01  # I add this
             R = 0.001*np.eye(1)
             reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
         else:  # "CartPole-v1"
@@ -307,7 +308,8 @@ Ad = state_dict['lA.weight'].cpu().numpy()
 Bd = state_dict['lB.weight'].cpu().numpy()
 
 # Step2: name the video
-env = Data_collect.env
+# env = Data_collect.env
+env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # seed=2022, visualize_reward=False, from_pixels=True
 # env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
 env.reset()
 
