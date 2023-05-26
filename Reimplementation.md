@@ -41,7 +41,11 @@ python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_contro
 
 tmux a -t KoopTest
 
+change the Ksteps = 15 to 250
+
 ATTENTION for shortening time, shrink the size 100 times:
 train_steps = 200000, Ktrain_samples=50000,Ktest_samples = 20000
 
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test" 
+
+change the Ksteps = 15 to 250

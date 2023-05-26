@@ -109,7 +109,7 @@ def train(env_name, train_steps = 2000,suffix="",all_loss=0,\
     # Ktest_samples = 1000
     Ktrain_samples = Ktrain_samples
     Ktest_samples = 200  # 20000
-    Ksteps = 15
+    Ksteps = 250  # 15
     Kbatch_size = 100
     res = 1
     normal = 1

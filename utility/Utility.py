@@ -367,7 +367,7 @@ class data_collecter():
 
                 s0 = rebuild_state(self.env.physics.get_state()) # s0.shape = (5,)
                 # s0 = self.random_state()
-                u10 = upid(s0)  # np.random.uniform(self.umin, self.umax)
+                u10 = ulqr(s0)  # np.random.uniform(self.umin, self.umax)
                 # print(u10)
                 # self.env.reset_state(s0)
                 train_data[0,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
@@ -376,7 +376,7 @@ class data_collecter():
                     frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
 
                     s0 = rebuild_state(self.env.physics.get_state())
-                    u10 = upid(s0)  # np.random.uniform(self.umin, self.umax)
+                    u10 = ulqr(s0)  # np.random.uniform(self.umin, self.umax)
                     train_data[i,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
                 imageio.mimsave(f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/traj{traj_i}.gif', frames, duration=duration)
                 
