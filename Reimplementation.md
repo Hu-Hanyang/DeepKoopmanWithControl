@@ -45,3 +45,13 @@ ATTENTION for shortening time, shrink the size 100 times:
 train_steps = 200000, Ktrain_samples=50000,Ktest_samples = 20000
 
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test" 
+
+4. In the new branch "experiment", remove the gif expression and use the original environment (not camera) to generate data
+
+tmux a -t KoopTest
+
+ATTENTION: restored the original hyperparameters:
+train_steps = 200000, Ktrain_samples=50000,Ktest_samples = 20000
+
+
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test" 
