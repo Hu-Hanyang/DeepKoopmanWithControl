@@ -103,12 +103,12 @@ def Eig_loss(net):
     loss = c[mask].sum()
     return loss
 
-def train(env_name, train_steps = 2000,suffix="",all_loss=0,\
-            encode_dim = 12,layer_depth=3,e_loss=1,gamma=0.5,Ktrain_samples=500):
+def train(env_name, train_steps = 20000,suffix="",all_loss=0,\
+            encode_dim = 12,layer_depth=3,e_loss=1,gamma=0.5,Ktrain_samples=5000):
     # Ktrain_samples = 1000
     # Ktest_samples = 1000
     Ktrain_samples = Ktrain_samples
-    Ktest_samples = 200  # 20000
+    Ktest_samples = 2000 # 20000
     Ksteps = 250  # 15
     Kbatch_size = 100
     res = 1
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     parser.add_argument("--env",type=str,default="DampingPendulum")
     parser.add_argument("--suffix",type=str,default="5_2")
     parser.add_argument("--all_loss",type=int,default=1)
-    parser.add_argument("--K_train_samples",type=int,default=500)  # 50000
+    parser.add_argument("--K_train_samples",type=int,default=5000)  # 50000
     parser.add_argument("--e_loss",type=int,default=0)
     parser.add_argument("--gamma",type=float,default=0.8)
     parser.add_argument("--encode_dim",type=int,default=20)

@@ -29,7 +29,7 @@ method_index = 4
 # Step1: choose the env and suffix
 # suffix = "test"
 # env_name = "CartPole-v1"
-suffix = "dm_control_u2"
+suffix = "dm_control_test"  # test, test1
 env_name = "CartPole-dm"
 # suffix = "Pendulum1_26"
 # env_name = "Pendulum-v1"
@@ -269,7 +269,8 @@ def Prepare_LQR(env_name):
             Q = np.zeros((NKoopman,NKoopman))
             Q[1,1] = 0.01
             Q[2,2] = 5.0
-            Q[3,3] = 0.01
+            Q[3,3] = 5.0
+            Q[4,4] = 0.01
             # Q[4,4] = 0.01  # I add this
             R = 0.001*np.eye(1)
             reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
@@ -279,7 +280,7 @@ def Prepare_LQR(env_name):
             Q[2,2] = 5.0
             Q[3,3] = 0.01
             R = 0.001*np.eye(1)
-            reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, cart velocity, pole angle, pole angular velocity], original: [0.0, 0.0,-0.3, 0]
+            reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, pole angle, cart velocity,  pole angular velocity], original: [0.0, 0.0,-0.3, 0]
     elif env_name.startswith("Pendulum"):
         Q = np.zeros((NKoopman,NKoopman))
         Q[0,0] = 5.0
@@ -317,7 +318,7 @@ Ad = np.matrix(Ad)
 Bd = np.matrix(Bd)
 Q, R, reset_state, x_ref = Prepare_LQR(env_name)
 # print(f"The Q matrix is: \n {Q}; \n The R metrix is {R}. \n")
-Kopt = lqr_regulator_k(Ad,Bd,Q,R)
+Kopt = lqr_regulator_k(Ad, Bd, Q, R)
 observation_list = []
 
 # Step3: choose the observation to circumvent the reset_state() function

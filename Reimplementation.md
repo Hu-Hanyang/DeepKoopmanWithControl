@@ -49,3 +49,8 @@ train_steps = 200000, Ktrain_samples=50000,Ktest_samples = 20000
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test" 
 
 change the Ksteps = 15 to 250
+
+ATTENTION: change the  hyperparameters: train_steps = 20000, Ktrain_samples=5000, Ktest_samples = 2000
+
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test1" 
+

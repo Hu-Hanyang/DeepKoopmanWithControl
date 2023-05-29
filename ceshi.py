@@ -165,10 +165,10 @@ print(f"The physics_state is {physics_state}.")  # different every time
 # env.close()
 
 
-def ce(x):
-    if (0 < x and x < 1.57) or (4.71 < x and x < 6.28):
-        print("1")
-    else:
-        print("2")
+# def ce(x):
+#     if (0 < x and x < 1.57) or (4.71 < x and x < 6.28):
+#         print("1")
+#     else:
+#         print("2")
 
-ce(2.0)
+# ce(2.0)
