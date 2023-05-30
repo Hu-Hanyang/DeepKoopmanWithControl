@@ -60,3 +60,8 @@ ATTENTION: the control must be implemented in the original (not tmux mode)
 when 
 Q[1,1] = 0.01 Q[2,2] = 5.0 Q[3,3] = 5.0 Q[4,4] = 0.01
 rewards/200 steps = 5.489
+
+Meeting 29th, May
+First, use LQR to achieve the swing up task.
+
+Second, add stochastic training data
