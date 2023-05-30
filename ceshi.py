@@ -48,8 +48,8 @@ import imageio
 # env2 = dmc2gym.make(doxmain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # 'swingup', 'balance'
 # env2 = dmc2gym.make(domain_name='cartpole', task_name='swingup', visualize_reward=False, seed=2022, from_pixels=True)  # 'swingup', 'balance'
 env2 = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)
-# print(f"The action space of CartPole in dm_control is {env2.action_space}.")  # .shape[0]
-# print(f"The obs space of CartPole in dm_control is {env2.observation_space}.")
+print(f"The action space of CartPole in dm_control is {env2.action_space}.")  # .shape[0]
+print(f"The obs space of CartPole in dm_control is {env2.observation_space}.")
 # # print(f"The lower bound of the state are {env2.observation_space.low}")
 obs = env2.reset()  # obs.shape = 5
 print(f"The obs.shape is {obs.shape}.")
@@ -172,3 +172,6 @@ print(f"The physics_state is {physics_state}.")  # different every time
 #         print("2")
 
 # ce(2.0)
+np.random.seed(2002)
+for i in range(10):
+    print(int(np.random.randint(low=0, high=10) * 3e5))

@@ -54,3 +54,19 @@ ATTENTION: change the  hyperparameters: train_steps = 20000, Ktrain_samples=5000
 
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test1" 
 
+
+4. Use PPO controller to generate the training and testing data
+In the main branch, 1:Python (train)
+Use the final PPO model to generate the training data.
+
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_PPO1"
+
+Notice: the training data is saved in "dm_train_data/under_PPO_control_350" 
+
+In the main branch
+Use the mixed PPO models to generate the training data.
+
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_mixedPPO"
+
+Notice: the training data is saved in "dm_train_data/under_mixed_PPO_control_350" 
+

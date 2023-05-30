@@ -11,8 +11,10 @@ import sys
 from utility.control_swingup import ulqr, upid, rebuild_state
 from PIL import Image, ImageDraw
 import imageio
+from controller.PPO import PPO
+import os
+
 sys.path.append("../franka")
-#data collect
 
 class RBFLiftFunc():
     def __init__(self,env_name,Nstate,udim,Nrbf,observation_space,type="thinplate",center=None) -> None:
@@ -267,7 +269,7 @@ class data_collecter():
         elif self.env_name == "CartPole-dm":
             # add the CartPole from dm_control
             print(f"The environment is the CartPole from dm_control.")
-            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, height=80, width=80, camera_id=0, visualize_reward=False, from_pixels=True)  # seed=2022, visualize_reward=False, from_pixels=True
+            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, height=80, width=180, camera_id=0, visualize_reward=False, from_pixels=True)  # seed=2022, visualize_reward=False, from_pixels=True
             self.udim = self.env.action_space.shape[0]
             self.Nstates = 5  # 5
             self.umin = self.env.action_space.low  # -1
@@ -318,7 +320,7 @@ class data_collecter():
             s0 = np.array([x0,th0,th1,dx0,dth0,dth1]) 
         return np.array(s0)
 
-    def collect_koopman_data(self, traj_num, steps, mode="train"):
+    def collect_koopman_data(self, traj_num, steps, mode="train"):  # add controller method as input
         # traj_num = 50000, steps = 15
         train_data = np.empty((steps+1,traj_num,self.Nstates+self.udim))
         if self.env_name.startswith("Franka"):
@@ -360,25 +362,35 @@ class data_collecter():
         elif self.env_name == "CartPole-dm" :
             print("Generate Koopman data for CartPole-dm now!")
             for traj_i in range(traj_num):
+                # load PPO controller
+                ppo_controller = PPO(state_dim=5, action_dim=1, lr_actor=0.0003, lr_critic=0.001, gamma=0.99, K_epochs=80, eps_clip=0.2, has_continuous_action_space=True)
+                random_seed = 0             #### set this to load a particular checkpoint trained on random seed
+                run_num_pretrained = int(np.random.randint(low=0, high=10) * 3e5)      #### set this to load a particular checkpoint num
+                directory = "/localhome/hha160/projects/DeepKoopmanWithControl/controller" + '/' 
+                checkpoint_path = directory + "PPO_{}_{}_{}.pth".format("CartPole-dm", random_seed, run_num_pretrained)
+                # print("loading network from : " + checkpoint_path)
+                ppo_controller.load(checkpoint_path)
                 frames = []
                 duration = 0.2
                 image0 = self.env.reset()
                 frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
-
                 s0 = rebuild_state(self.env.physics.get_state()) # s0.shape = (5,)
                 # s0 = self.random_state()
-                u10 = ulqr(s0)  # np.random.uniform(self.umin, self.umax)
+                u10 = ppo_controller.select_action(s0)  # np.random.uniform(self.umin, self.umax)
                 # print(u10)
                 # self.env.reset_state(s0)
                 train_data[0,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
                 for i in range(1,steps+1):
                     next_image, r, done,_ = self.env.step(u10)
                     frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
-
                     s0 = rebuild_state(self.env.physics.get_state())
-                    u10 = ulqr(s0)  # np.random.uniform(self.umin, self.umax)
+                    u10 = ppo_controller.select_action(s0)  # np.random.uniform(self.umin, self.umax)
                     train_data[i,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
-                imageio.mimsave(f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/traj{traj_i}.gif', frames, duration=duration)
+                path = f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/under_mixed_PPO_control_{steps}'
+                if not os.path.exists(path):
+                    os.makedirs(path)
+                if traj_i % 100 == 0:
+                    imageio.mimsave(f'{path}/traj{traj_i}.gif', frames, duration=duration)
                 
         else:  # "CartPole"
             for traj_i in range(traj_num):
