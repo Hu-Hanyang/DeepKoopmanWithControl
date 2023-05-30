@@ -52,6 +52,8 @@ env2 = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from
 # print(f"The obs space of CartPole in dm_control is {env2.observation_space}.")
 # # print(f"The lower bound of the state are {env2.observation_space.low}")
 obs = env2.reset()  # obs.shape = 5
+print(env2.render(mode="rgb_array").shape) 
+print(f"The reference state is {np.zeros(5)}")
 print(f"The obs.shape is {obs.shape}.")
 physics_state = env2.physics.get_state()
 print(f"The physics_state is {physics_state}.")  # different every time

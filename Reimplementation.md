@@ -53,5 +53,10 @@ tmux a -t KoopTest
 ATTENTION: restored the original hyperparameters:
 train_steps = 200000, Ktrain_samples=50000,Ktest_samples = 20000
 
-
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_test" 
+
+Control Performances: 
+ATTENTION: the control must be implemented in the original (not tmux mode)
+when 
+Q[1,1] = 0.01 Q[2,2] = 5.0 Q[3,3] = 5.0 Q[4,4] = 0.01
+rewards/200 steps = 5.489

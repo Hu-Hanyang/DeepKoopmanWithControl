@@ -15,9 +15,10 @@ from utility.Utility import data_collecter
 import dmc2gym
 from utility.lqr import *
 import cv2
-from PIL import Image
 import glob
 import scipy.linalg as linalg
+from PIL import Image, ImageDraw
+import imageio
 
 
 
@@ -268,20 +269,22 @@ def Prepare_LQR(env_name):
     if env_name.startswith("CartPole"):  # "CartPole-v1", "CartPole-dm"
         if env_name == "CartPole-dm":
             # the state dimension is 5
+            x_ref = np.array([0.0, 1.0, 0.0, 0.0, 0.0])
             Q = np.zeros((NKoopman,NKoopman))
             Q[1,1] = 0.01
             Q[2,2] = 5.0
-            Q[3,3] = 0.01
-            # Q[4,4] = 0.01  # I add this
+            Q[3,3] = 5.0
+            Q[4,4] = 0.01
+            Q[5, 5] = 0.01
             R = 0.001*np.eye(1)
-            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
+            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，cos，sin, cart速度，pole角速度]
         else:  # "CartPole-v1"
             Q = np.zeros((NKoopman,NKoopman))
             Q[1,1] = 0.01
             Q[2,2] = 5.0
             Q[3,3] = 0.01
             R = 0.001*np.eye(1)
-            reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, cart velocity, pole angle, pole angular velocity], original: [0.0, 0.0,-0.3, 0]
+            reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, pole angle, cart velocity, pole angular velocity], original: [0.0, 0.0,-0.3, 0]
     elif env_name.startswith("Pendulum"):
         Q = np.zeros((NKoopman,NKoopman))
         Q[0,0] = 5.0
@@ -318,10 +321,13 @@ env.reset()
 Ad = np.matrix(Ad)
 Bd = np.matrix(Bd)
 Q, R, reset_state, x_ref = Prepare_LQR(env_name)
-# print(f"The Q matrix is: \n {Q}; \n The R metrix is {R}. \n")
-# Kopt = lqr_regulator_k(Ad,Bd,Q,R)  # original one
-P = linalg.solve_continuous_are(Ad, Bd, Q, R)
-Kopt = np.dot(np.linalg.inv(R), np.dot(Bd.T, P))
+print(f"The reset state is {reset_state}.")
+print(f"The goal state is {x_ref}.")
+
+Kopt = lqr_regulator_k(Ad, Bd, Q, R)  # original one
+
+# P = linalg.solve_continuous_are(Ad, Bd, Q, R)
+# Kopt = np.dot(np.linalg.inv(R), np.dot(Bd.T, P))  # my own lqr controller
 
 observation_list = []
 
@@ -334,13 +340,18 @@ x_ref_lift = Psi_o(x_ref, net)
 observation_list.append(x0[:Nstate].reshape(-1,1))
 # print(Kopt)
 u_list = []
-steps = 200
+steps = 500
 # umax = 100
 rewards = 0.0
-images = []  # Step 4: to save the image of "CartPole-dm"
+# images = []  # Step 4: to save the image of "CartPole-dm"
+frames = []  # Step4: save as the gif
+duration = 0.2
+
 for i in range(steps):
-    images.append(env.render(mode="rgb_array"))
+    # images.append(env.render(mode="rgb_array"))
+    frames.append(Image.fromarray(env.render(mode="rgb_array"), "RGB"))
     u = -Kopt*(x0 - x_ref_lift)
+    # u = np.clip(u, -1.0, 1.0)
     # u = max(-umax,min(umax,u[0,0]))
     # print(type(u[0,0]),type(u))
     observation, reward, done, info = env.step(u[0,0])
@@ -352,6 +363,7 @@ for i in range(steps):
     # time.sleep(0.1)
 env.close()
 
+imageio.mimsave(f'/localhome/hha160/projects/DeepKoopmanWithControl/control_py/control_result.gif', frames, duration=duration)
 observations = np.concatenate(observation_list,axis=1)
 u_list = np.array(u_list).reshape(-1)
 time_history = np.arange(steps+1)*0.02  # env.dt
@@ -367,21 +379,21 @@ print(f"In {steps} steps, the total rewards is {rewards}.")
 # Step 5: generate video while using "CartPole-dm"
 # print(images[0].shape)
 # save images
-for i in range(len(images)):
-    image = images[i]
-    image = Image.fromarray(image, "RGB")
-    path = "/localhome/hha160/projects/DeepKoopmanWithControl/dm_images"
-    if not os.path.exists(path):
-        os.makedirs(path)
-    image.save(f"{path}/x{i}.png")
+# for i in range(len(images)):
+#     image = images[i]
+#     image = Image.fromarray(image, "RGB")
+#     path = "/localhome/hha160/projects/DeepKoopmanWithControl/dm_images"
+#     if not os.path.exists(path):
+#         os.makedirs(path)
+#     image.save(f"{path}/x{i}.png")
 
-img_array = []
-for filename in glob.glob('/localhome/hha160/projects/DeepKoopmanWithControl/dm_images/*.png'):
-    img = cv2.imread(filename)
-    height, width, layers = img.shape
-    size = (width,height)
-    img_array.append(img)
-out = cv2.VideoWriter('videos_dm/CartPole-dm.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, size)
-for i in range(len(img_array)):
-    out.write(img_array[i])
-out.release()
+# img_array = []
+# for filename in glob.glob('/localhome/hha160/projects/DeepKoopmanWithControl/dm_images/*.png'):
+#     img = cv2.imread(filename)
+#     height, width, layers = img.shape
+#     size = (width,height)
+#     img_array.append(img)
+# out = cv2.VideoWriter('videos_dm/CartPole-dm.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, size)
+# for i in range(len(img_array)):
+#     out.write(img_array[i])
+# out.release()
