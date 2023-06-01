@@ -77,3 +77,6 @@ Notice: the training data is saved in "dm_train_data/under_mixed_PPO_control_300
 
 5.0 debugging
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug"
+
+5.1 change the gamma from 0.99 to 1.00
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug1"

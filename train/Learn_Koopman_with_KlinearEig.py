@@ -42,7 +42,7 @@ class Network(nn.Module):
         return self.encode_net(x)
 
     def encode(self,x):
-        return torch.cat([x,self.encode_net(x)],axis=-1)
+        return torch.cat([x, self.encode_net(x)],axis=-1)
     
     def forward(self,x,u):
         return self.lA(x)+self.lB(u)
@@ -66,7 +66,7 @@ def K_loss(data,net,u_dim=1,Nstate=4):
 #loss function
 def Klinear_loss(data,net,mse_loss,u_dim=1,gamma=0.99,Nstate=4,all_loss=0):
     steps,train_traj_num,NKoopman = data.shape
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # torch.device("cpu")
     data = torch.DoubleTensor(data).to(device)
     X_current = net.encode(data[0,:,u_dim:])
     beta = 1.0
@@ -74,15 +74,15 @@ def Klinear_loss(data,net,mse_loss,u_dim=1,gamma=0.99,Nstate=4,all_loss=0):
     loss = torch.zeros(1,dtype=torch.float64).to(device)
     Augloss = torch.zeros(1,dtype=torch.float64).to(device)
     for i in range(steps-1):
-        X_current = net.forward(X_current,data[i,:,:u_dim])
+        X_current = net.forward(X_current, data[i,:,:u_dim])
         beta_sum += beta
         if not all_loss:
-            loss += beta*mse_loss(X_current[:,:Nstate],data[i+1,:,u_dim:])
+            loss += beta*mse_loss(X_current[:,:Nstate], data[i+1,:,u_dim:])
         else:
             Y = net.encode(data[i+1,:,u_dim:])
             loss += beta*mse_loss(X_current,Y)
         X_current_encoded = net.encode(X_current[:,:Nstate])
-        Augloss += mse_loss(X_current_encoded,X_current)
+        Augloss += mse_loss(X_current_encoded, X_current)
         beta *= gamma
     loss = loss/beta_sum
     Augloss = Augloss/beta_sum
@@ -96,7 +96,7 @@ def Stable_loss(net,Nstate):
     return loss
 
 def Eig_loss(net):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # torch.device("cpu")
     A = net.lA.weight
     c = torch.linalg.eigvals(A).abs()-torch.ones(1,dtype=torch.float64).to(device)
     mask = c>0
@@ -104,7 +104,7 @@ def Eig_loss(net):
     return loss
 
 def train(env_name, train_steps = 20000,suffix="",all_loss=0,\
-            encode_dim = 12,layer_depth=3,e_loss=1,gamma=0.5,Ktrain_samples=5000):
+            encode_dim = 12, layer_depth=3, e_loss=1, gamma=0.5, Ktrain_samples=5000):
     # Ktrain_samples = 1000
     # Ktest_samples = 1000
     Ktrain_samples = Ktrain_samples
@@ -157,7 +157,7 @@ def train(env_name, train_steps = 20000,suffix="",all_loss=0,\
         Kindex = list(range(Ktrain_samples))
         random.shuffle(Kindex)
         X = Ktrain_data[:,Kindex[:Kbatch_size],:]
-        Kloss = Klinear_loss(X,net,mse_loss,u_dim,gamma,Nstate,all_loss)
+        Kloss = Klinear_loss(X, net, mse_loss, u_dim, gamma, Nstate, all_loss)
         Eloss = Eig_loss(net)
         loss = Kloss+Eloss if e_loss else Kloss
         # loss = Kloss

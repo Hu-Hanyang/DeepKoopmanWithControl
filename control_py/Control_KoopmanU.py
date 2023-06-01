@@ -31,7 +31,7 @@ method_index = 4
 # Step1: choose the env and suffix
 # suffix = "test"
 # env_name = "CartPole-v1"
-suffix = "dm_control_mixed_PPO"  # test, test1
+suffix = "dm_control_debug"  # test, test1
 env_name = "CartPole-dm"
 # suffix = "Pendulum1_26"
 # env_name = "Pendulum-v1"
@@ -94,16 +94,17 @@ def Prepare_LQR(env_name):
     if env_name.startswith("CartPole"):  # "CartPole-v1", "CartPole-dm"
         if env_name == "CartPole-dm":
             # the state dimension is 5
-            x_ref = np.array([0.0, 0.0, 1.0, 0.0, 0.0])
+            x_ref = np.array([0.0, 1.0, 0.0, 0.0, 0.0])
             Q = np.zeros((NKoopman,NKoopman))
-            Q[1,1] = 0.01
-            Q[2,2] = 5.0
-            Q[3,3] = 5.0
+            Q[0, 0] = 0.0
+            Q[1,1] = 15.0
+            # Q[2,2] = 15.0
+            Q[3,3] = 0.01
             Q[4,4] = 0.01
-            Q[5,5] = 0.01
+            # Q[5,5] = 0.01
             # Q[4,4] = 0.01  # I add this
             R = 0.001*np.eye(1)
-            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
+            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度cos, 角度sin，cart速度，pole角速度]
         else:  # "CartPole-v1"
             Q = np.zeros((NKoopman,NKoopman))
             Q[1,1] = 0.01
@@ -139,7 +140,8 @@ Ad = state_dict['lA.weight'].cpu().numpy()
 Bd = state_dict['lB.weight'].cpu().numpy()
 
 # Step2: name the video
-env = Data_collect.env
+# env = Data_collect.env
+env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, height=80, width=180, camera_id=0, visualize_reward=False, from_pixels=True)
 # env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # seed=2022, visualize_reward=False, from_pixels=True
 # env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
 env.reset()
@@ -156,6 +158,7 @@ observation_list = []
 # Step3: choose the observation to circumvent the reset_state() function
 # observation = env.reset_state(reset_state)  # for "CartPole-v1"
 image0 = env.reset()  # for "CartPole-dm"
+print(f"The shape of the image0 is {image0.shape}")
 observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
 
 print(f"The shape of the observation is {observation.shape}")
@@ -171,16 +174,16 @@ steps = 300
 rewards = 0.0
 frames = []  # Step 4: to save the image of "CartPole-dm"
 duration = 0.2
-frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
+# frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
 
 for i in range(steps):
     # images.append(env.render(mode="rgb_array"))
     u = -Kopt*(x0 - x_ref_lift)
     # u = max(-umax,min(umax,u[0,0]))
     # print(type(u[0,0]),type(u))
-    next_image, reward, done, info = env.step(u[0,0])
-    frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
-    observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
+    observation, reward, done, info = env.step(u[0,0])
+    # frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
+    # observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
 
     rewards += reward
     x0 = np.matrix(Psi_o(observation, net))
@@ -204,10 +207,10 @@ print(f"In {steps} steps, the total rewards is {rewards}.")
 # plt.show()
 
 # Step 5: generate video while using "CartPole-dm"
-path = f'/localhome/hha160/projects/DeepKoopmanWithControl/control_py/ControlResults'
-if not os.path.exists(path):
-    os.makedirs(path)
-imageio.mimsave(f'{path}/result{steps}.gif', frames, duration=duration)
+# path = f'/localhome/hha160/projects/DeepKoopmanWithControl/control_py/ControlResults'
+# if not os.path.exists(path):
+#     os.makedirs(path)
+# imageio.mimsave(f'{path}/result{steps}.gif', frames, duration=duration)
                 
 # print(images[0].shape)
 # save images

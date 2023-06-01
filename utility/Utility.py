@@ -269,9 +269,9 @@ class data_collecter():
         elif self.env_name == "CartPole-dm":
             # add the CartPole from dm_control
             print(f"The environment is the CartPole from dm_control.")
-            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, height=80, width=180, camera_id=0, visualize_reward=False, from_pixels=True)  # seed=2022, visualize_reward=False, from_pixels=True
+            self.env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # seed=2022, visualize_reward=False, from_pixels=True
             self.udim = self.env.action_space.shape[0]
-            self.Nstates = 5  # 5
+            self.Nstates = self.env.observation_space.shape[0]  # 5
             self.umin = self.env.action_space.low  # -1
             self.umax = self.env.action_space.high  # +1
         else:  # CartPole-v1 from gym
@@ -285,7 +285,7 @@ class data_collecter():
             # self.observation_space = self.env.observation_space
             self.env.reset()
             if self.env_name == "CartPole-dm":
-                self.observation_space = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False).observation_space
+                self.observation_space = self.env.observation_space
                 print(f"The observation space is {self.observation_space}")
                 self.dt = 0.02  # from gym CartPole self.tau, seconds between state updates
             else:
@@ -323,7 +323,7 @@ class data_collecter():
 
     def collect_koopman_data(self, traj_num, steps, mode="train"):  # add controller method as input
         # traj_num = 50000, steps = 15
-        train_data = np.empty((steps+1,traj_num,self.Nstates+self.udim))
+        train_data = np.empty((steps+1, traj_num, self.Nstates+self.udim))
         if self.env_name.startswith("Franka"):
             for traj_i in range(traj_num):
                 noise = (np.random.rand(7)-0.5)*2*0.2
@@ -378,27 +378,28 @@ class data_collecter():
                 #     run_num_pretrained = 3000000
                 # load PPO controller
                 
-                frames = []
-                duration = 0.2
-                image0 = self.env.reset()
-                frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
-                s0 = rebuild_state(self.env.physics.get_state()) # s0.shape = (5,)
+                # frames = []
+                # duration = 0.2
+                # image0 = self.env.reset()
+                # frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
+                s0 = self.env.reset()
                 # s0 = self.random_state()
                 u10 = ppo_controller.select_action(s0)  # np.random.uniform(self.umin, self.umax)
                 # print(u10)
                 # self.env.reset_state(s0)
                 train_data[0,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
                 for i in range(1,steps+1):
-                    next_image, r, done,_ = self.env.step(u10)
-                    frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
-                    s0 = rebuild_state(self.env.physics.get_state())
+                    s0, r, done,_ = self.env.step(u10)
+                    # frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
+                    # s0 = rebuild_state(self.env.physics.get_state())
                     u10 = ppo_controller.select_action(s0)  # np.random.uniform(self.umin, self.umax)
                     train_data[i,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
-                path = f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/under_mixed_PPO_control_{steps}'
-                if not os.path.exists(path):
-                    os.makedirs(path)
+                # path = f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/under_mixed_PPO_debug_control_{steps}'
+                # if not os.path.exists(path):
+                #     os.makedirs(path)
                 if traj_i % 100 == 0:
-                    imageio.mimsave(f'{path}/traj{traj_i}.gif', frames, duration=duration)
+                    print(f"We have generate {traj_i} trajectories now.")
+                #     imageio.mimsave(f'{path}/traj{traj_i}.gif', frames, duration=duration)
                 
         else:  # "CartPole"
             for traj_i in range(traj_num):

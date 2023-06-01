@@ -116,5 +116,6 @@ ppo_controller.load(checkpoint_path)
 
 # generate training data
 training_data = data_Generator.collect_koopman_data(traj_num=10, steps=350, mode="train", controller=ppo_controller)
-in_dim =training_data.shape[-1] - 1
-print(in_dim)
+Kindex = list(range(training_data))
+X = training_data[:,Kindex[:8],:]
+print(X)
