@@ -286,6 +286,7 @@ class data_collecter():
             self.env.reset()
             if self.env_name == "CartPole-dm":
                 self.observation_space = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False).observation_space
+                print(f"The observation space is {self.observation_space}")
                 self.dt = 0.02  # from gym CartPole self.tau, seconds between state updates
             else:
                 self.observation_space = self.env.observation_space
