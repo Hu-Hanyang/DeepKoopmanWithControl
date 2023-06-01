@@ -360,16 +360,23 @@ class data_collecter():
                 train_data.append(train_data_now)
             train_data = np.concatenate(train_data,axis=1)   
         elif self.env_name == "CartPole-dm" :
-            print("Generate Koopman data for CartPole-dm now!")
+            print("Generate Koopman data for CartPole-dm using PPO controller now!")
+            ppo_controller = PPO(state_dim=5, action_dim=1, lr_actor=0.0003, lr_critic=0.001, gamma=0.99, K_epochs=80, eps_clip=0.2, has_continuous_action_space=True)
+            random_seed = 0             #### set this to load a particular checkpoint trained on random seed
+            run_num_pretrained = 200000      #### set this to load a particular checkpoint num
+            directory = "/localhome/hha160/projects/DeepKoopmanWithControl/controller" + '/' 
+            checkpoint_path = directory + "PPO_{}_{}_{}.pth".format("CartPole-dm", random_seed, run_num_pretrained)
+            # print("loading network from : " + checkpoint_path)
+            ppo_controller.load(checkpoint_path)
             for traj_i in range(traj_num):
+                # if traj_i < (traj_num / 3) :
+                #     run_num_pretrained = 3e5
+                # elif (traj_num / 3) <= traj_i < (2*traj_num / 3):
+                #     run_num_pretrained = 1800000
+                # else:
+                #     run_num_pretrained = 3000000
                 # load PPO controller
-                ppo_controller = PPO(state_dim=5, action_dim=1, lr_actor=0.0003, lr_critic=0.001, gamma=0.99, K_epochs=80, eps_clip=0.2, has_continuous_action_space=True)
-                random_seed = 0             #### set this to load a particular checkpoint trained on random seed
-                run_num_pretrained = int(np.random.randint(low=0, high=10) * 3e5)      #### set this to load a particular checkpoint num
-                directory = "/localhome/hha160/projects/DeepKoopmanWithControl/controller" + '/' 
-                checkpoint_path = directory + "PPO_{}_{}_{}.pth".format("CartPole-dm", random_seed, run_num_pretrained)
-                # print("loading network from : " + checkpoint_path)
-                ppo_controller.load(checkpoint_path)
+                
                 frames = []
                 duration = 0.2
                 image0 = self.env.reset()

@@ -13,7 +13,7 @@ device = torch.device('cpu')
 #     print("Device set to : " + str(torch.cuda.get_device_name(device)))
 # else:
 #     print("Device set to : cpu")
-print(f"The PPO controller is set to {device}.")
+# print(f"The PPO controller is set to {device}.")
 print("============================================================================================")
 
 
@@ -146,6 +146,8 @@ class PPO:
         self.policy_old.load_state_dict(self.policy.state_dict())
         
         self.MseLoss = nn.MSELoss()
+        print(f"The PPO controller is set to {device}.")
+
 
     def set_action_std(self, new_action_std):
         if self.has_continuous_action_space:

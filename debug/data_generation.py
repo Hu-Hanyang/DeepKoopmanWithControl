@@ -108,7 +108,7 @@ data_Generator = data_generator("CartPole-dm", pixel=True)
 # initialize a PPO agent
 ppo_controller = PPO(state_dim=5, action_dim=1, lr_actor=0.0003, lr_critic=0.001, gamma=0.99, K_epochs=80, eps_clip=0.2, has_continuous_action_space=True)
 random_seed = 0             #### set this to load a particular checkpoint trained on random seed
-run_num_pretrained = 0      #### set this to load a particular checkpoint num
+run_num_pretrained = 200000      #### set this to load a particular checkpoint num
 directory = "/localhome/hha160/projects/DeepKoopmanWithControl/controller" + '/' 
 checkpoint_path = directory + "PPO_{}_{}_{}.pth".format("CartPole-dm", random_seed, run_num_pretrained)
 print("loading network from : " + checkpoint_path)

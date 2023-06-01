@@ -1,177 +1,187 @@
+import torch
 import numpy as np
+import torch.nn as nn
+import torch.nn.functional as F
 import gym
 import os
-import dmc2gym
+import matplotlib.pyplot as plt
+import random
+import argparse
+from collections import OrderedDict
+from copy import copy
+import scipy
+import scipy.linalg
 from utility.Utility import data_collecter
-from dm_control import suite
-from PIL import Image, ImageDraw
-from utility.control_swingup import ulqr, upid, rebuild_state
+import dmc2gym
+from utility.lqr import *
+import cv2
+from PIL import Image
 import imageio
-# import scipy.linalg as linalg
-# lqr = linalg.solve_continuous_are
-
-# from utility.control_swingup import ulqr
-
-# # 创建图像帧
-# frames = []
-# duration = 0.2  # 每个图像帧的显示时间（以秒为单位）
-
-# # 创建一些简单的图像帧（红色和蓝色的交替矩形）
-# for i in range(10):
-#     # 创建新的图像帧
-#     # image = images[i].transpose(1, 2, 0)
-#     # image = Image.fromarray(image, "RGB")
-#     img = Image.new('RGB', (200, 200), color=(255, 255, 255))
-#     draw = ImageDraw.Draw(img)
-
-#     # 交替绘制红色和蓝色的矩形
-#     if i % 2 == 0:
-#         draw.rectangle([(50, 50), (150, 150)], fill=(255, 0, 0))
-#     else:
-#         draw.rectangle([(50, 50), (150, 150)], fill=(0, 0, 255))
-
-#     # 将当前帧添加到帧列表中
-#     frames.append(img)
-
-# # 将帧列表保存为GIF文件
-# imageio.mimsave('animation.gif', frames, duration=duration)
+import glob
+from utility.control_swingup import ulqr, upid, rebuild_state
 
 
+Methods = ["KoopmanDerivative","KoopmanRBF",\
+            "KNonlinear","KNonlinearRNN","KoopmanU",\
+            "KoopmanNonlinearA","KoopmanNonlinear",\
+                ]
 
-# env = gym.make("CartPole-v1")
-# # obs = env.reset()
-# # print(obs)
-# print(f"The action space of CartPole in gym is {env.action_space}.")
-# print(f"The obs space of CartPole in gym is {env.observation_space}.")
-# # # print(env.dt)
+# select the method and the env
+method_index = 4
+# Step1: choose the env and suffix
+# suffix = "test"
+# env_name = "CartPole-v1"
+suffix = "dm_control_mixed_PPO"  # test, test1
+env_name = "CartPole-dm"
+# suffix = "Pendulum1_26"
+# env_name = "Pendulum-v1"
+# suffix = "5_2"
+# env_name = "DampingPendulum"
+# suffix = "MountainCarContinuous1_26"
+# env_name = "MountainCarContinuous-v0"
 
-# env2 = dmc2gym.make(doxmain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # 'swingup', 'balance'
-# env2 = dmc2gym.make(domain_name='cartpole', task_name='swingup', visualize_reward=False, seed=2022, from_pixels=True)  # 'swingup', 'balance'
-env2 = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)
-print(f"The action space of CartPole in dm_control is {env2.action_space}.")  # .shape[0]
-print(f"The obs space of CartPole in dm_control is {env2.observation_space}.")
-# # print(f"The lower bound of the state are {env2.observation_space.low}")
-obs = env2.reset()  # obs.shape = 5
-print(f"The obs.shape is {obs.shape}.")
-physics_state = env2.physics.get_state()
-print(f"The physics_state is {physics_state}.")  # different every time
-# # print(f"The type of the physics_state is {physics_state.shape}")
-# np.random.seed(2023)
-# x = np.random.uniform(low=-1e-3, high=1e-3)
-# theta = np.random.uniform(low=0.0, high=2*np.pi)
-# v = np.random.uniform(low=-1e-3, high=1e-3)
-# omega = np.random.uniform(low=-1e-2, high=1e-2)
-# new_physics_state = np.array([x, theta, v, omega])
-# print(f"The expected new_physics_state is {new_physics_state}.")
-# env2.physics.set_statex(physics_state)
-# print(f"The new physics_state is {env2.physics.get_state()}")
+method = Methods[method_index]
+root_path = "/localhome/hha160/projects/DeepKoopmanWithControl/Data/"+suffix
+print(f"The control method is {method}")
 
-# for i in range(10):
-#     u = np.random.uniform(env2.action_space.low, env2.action_space.high)
-#     next_obs, r, done, info = env2.step(u)
-#     rebuild_obs = rebuild_state(env2.physics.get_state()) 
-#     print(f"The next_obs is {next_obs}")
-#     print(f"The rebuild obs is {rebuild_obs}")
-# # print(obs)
-# print(f"The new env obs space is {dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False).observation_space}")
-# print(obs.shape)    # 5
-# # print(f"The obs is {obs}.")
-# # print(f"The type of the obs is {type(obs)}.")
-# # 根据\theta 和 角速度来做 pid controller
-# # obs_new = np.array([obs[0], np.arccos(obs[1]), obs[3], obs[4]])
-# # print(obs_new.shape)
-# # print(obs_new)
-# # u = ulqr(obs)
-# # print(u)
-# # print(env2.action_space.low) # Box(-1.0, 1.0, (1,), float32)
-# # # print(f"The results of step is {len(env2.step(env2.action_space.sample()))}")
+if method.endswith("KoopmanU"):
+    import train.Learn_Koopman_with_KlinearEig as lka
+for file in os.listdir(root_path):
+    if file.startswith(method+"_") and file.endswith(".pth"):
+        model_path = file  
 
-# a = env2.physics.get_state() # a.shape = 4
-# # print(a.shape)
-# print(f"The get_state is {a}.")
-# # print(f"The type of the get_state is {type(obs)}.")
-# rebuild_obs = np.array([a[0], np.cos(a[1]), np.sin(a[1]), a[2], a[3]])
-# print(f"The new rebuild obs from get_state is {rebuild_obs}.")
+Data_collect = data_collecter(env_name)
+udim = Data_collect.udim
+Nstate = Data_collect.Nstates  # Data_collect.Nstates
+layer_depth = 3
+layer_width = 128
+dicts = torch.load(root_path+"/"+model_path)
+state_dict = dicts["model"]
+if  method.endswith("KoopmanU"):  # use this 
+    layer = dicts["layer"]
+    NKoopman = layer[-1]+Nstate
+    net = lka.Network(layer,NKoopman,udim)  
+net.load_state_dict(state_dict)
+device = torch.device("cpu")
+net.cpu()
+net.double()
 
-# b = np.array([0.5, 0.5, 0.5, 0.5, 0.5])
+def Psi_o(s,net): # Evaluates basis functions Ψ(s(t_k))
+    psi = np.zeros([NKoopman,1])
+    ds = net.encode(torch.DoubleTensor(s)).detach().cpu().numpy()
+    psi[:NKoopman,0] = ds
+    return psi
 
-# env2.physics.set_state(b)
-# print(env2.physics.get_state())
+def Prepare_LQR(env_name):
+    x_ref = np.zeros(Nstate)
+    if env_name.startswith("CartPole"):  # "CartPole-v1", "CartPole-dm"
+        if env_name == "CartPole-dm":
+            # the state dimension is 5
+            x_ref = np.array([0.0, 1.0, 0.0, 0.0, 0.0])
+            Q = np.zeros((NKoopman,NKoopman))
+            Q[1,1] = 0.01
+            Q[2,2] = 5.0
+            Q[3,3] = 5.0
+            Q[4,4] = 0.01
+            Q[5,5] = 0.01
+            # Q[4,4] = 0.01  # I add this
+            R = 0.001*np.eye(1)
+            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
+        else:  # "CartPole-v1"
+            Q = np.zeros((NKoopman,NKoopman))
+            Q[1,1] = 0.01
+            Q[2,2] = 5.0
+            Q[3,3] = 0.01
+            R = 0.001*np.eye(1)
+            reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, pole angle, cart velocity,  pole angular velocity], original: [0.0, 0.0,-0.3, 0]
+    elif env_name.startswith("Pendulum"):
+        Q = np.zeros((NKoopman,NKoopman))
+        Q[0,0] = 5.0
+        Q[1,1] = 0.01
+        R = 0.001*np.eye(1)
+        reset_state = [-3.0,0.5]
+    elif env_name.startswith("DampingPendulum"):
+        Q = np.zeros((NKoopman,NKoopman))
+        Q[0,0] = 5.0
+        Q[1,1] = 0.01
+        R = 0.08*np.eye(1)
+        reset_state = [-2.5,0.1]   
+    elif env_name.startswith("MountainCarContinuous"):
+        Q = np.zeros((NKoopman,NKoopman))
+        Q[0,0] = 5.0
+        Q[1,1] = 0.01
+        R = 0.001*np.eye(1)
+        reset_state = [0.5,0.0]  
+        x_ref[0] = 0.45
+    Q = np.matrix(Q)
+    R = np.matrix(R)
+    return Q,R,reset_state,x_ref
 
-# env3 = suite.load(domain_name="cartpole", task_name="swingup")
-# action_spec = env3.action_spec()
-# time_step = env3.reset()
-# # action = np.random.uniform(action_spec.minimum, action_spec.maximum, size=action_spec.shape)
-# print(time_step.observation)
-# b = env3.physics.get_state()
-# print(b.shape)
-# print(b)
+print("Let the control task begin: \n")
+Ad = state_dict['lA.weight'].cpu().numpy()
+Bd = state_dict['lB.weight'].cpu().numpy()
+
+# Step2: name the video
+env = Data_collect.env
+# env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # seed=2022, visualize_reward=False, from_pixels=True
+# env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
+env.reset()
+
+Ad = np.matrix(Ad)
+Bd = np.matrix(Bd)
+print(f"The shape of the Ad is {Ad.shape}")
+Q, R, reset_state, x_ref = Prepare_LQR(env_name)
+print(f"The reference state is {x_ref}")
+print(f"The shape of the Q is {Q.shape}")
+Kopt = lqr_regulator_k(Ad, Bd, Q, R)
+observation_list = []
+
+# Step3: choose the observation to circumvent the reset_state() function
+# observation = env.reset_state(reset_state)  # for "CartPole-v1"
+image0 = env.reset()  # for "CartPole-dm"
+observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
+
+print(f"The shape of the observation is {observation.shape}")
+
+x = np.matrix(Psi_o(observation,net))
+print(f"The shape of latent state is {x.shape}")
+
+I = np.eye(5)
+Zeros = np.zeros(100).reshape(5, 20)
+C = np.concatenate((I, Zeros), axis=1)
+
+# remake_x = np.matmul(C, x0)
+# loss = np.sum(remake_x - observation.reshape((5,1)))
+# print(loss)
+
+  
+x_ref_lift = Psi_o(x_ref, net)
+observation_list.append(x[:Nstate].reshape(-1,1))
 
 
-# gravity = 9.8
-# masscart = 1.0
-# masspole = 0.1
-# total_mass = (masspole + masscart)
-# length = 0.5  # actually half the pole's length
-# polemass_length = (masspole * length)
-# force_mag = 10.0
-# tau = 0.02
 
 
-# H = np.array([
-# 	[1, 0, 0, 0],
-# 	[0, total_mass, 0, - polemass_length],
-# 	[0, 0, 1, 0],
-# 	[0, - polemass_length, 0, (2 * length)**2 * masspole / 3]
-# 	])
+# test the prediction ability of the model
+losses = []
+re_x0 = np.matmul(C, x)
+loss = np.sum(re_x0 - observation.reshape(5, 1))
+# print(loss)
+losses.append(loss)
 
-# Hinv = np.linalg.inv(H)
+for step in range(10):
+    u = env.action_space.sample()
+    # true obs
+    next_image, reward, done, info = env.step(u)
+    obs = rebuild_state(env.physics.get_state()) 
+    # model transition
+    x = np.matmul(Ad, x) + np.matmul(Bd, u)
+    re_x = np.matmul(C, x)
+    # calculate the loss
+    loss = np.sum(re_x - obs.reshape(5, 1))
+    losses.append(loss)
 
-# A = Hinv @ np.array([
-#     [0, 1, 0, 0],
-#     [0, 0, 0, 0],
-#     [0, 0, 0, 1],
-#     [0, 0, - polemass_length * gravity, 0]
-# 	])
-# B = Hinv @ np.array([0, 1.0, 0, 0]).reshape((4, 1))
-# Q = np.diag([0.01, 0.1, 100.0, 0.5])
-# R = np.array([[0.1]])
+print(f"The transitions loss is {losses}")
 
-# P = lqr(A, B, Q, R)
-# Rinv = np.linalg.inv(R)
-# K =  - Rinv @ B.T @ P
-
-
-# def ulqr(x):
-# 	x1 = np.copy(x)
-# 	x1[2] = np.sin(x1[2])
-# 	# x1 = x1.unsqueeze()
-# 	return np.dot(K, x1)
-
-# obs = env.reset()
-# # print(obs)
-# # u = ulqr(obs)
-# # print(u)
-# # next_obs, r, done, info = env.step(u)
-# # print(next_obs)
-# done = False
-
-# while not done:
-#     env.render()
-#     u = ulqr(obs)
-#     next_obs, r, done, inf = env.step(u)
-#     print(f"The next_obs is {next_obs}")
-#     obs =  next_obs
-# env.close()
+# test the PPO control ability
 
 
-# def ce(x):
-#     if (0 < x and x < 1.57) or (4.71 < x and x < 6.28):
-#         print("1")
-#     else:
-#         print("2")
-
-# ce(2.0)
-np.random.seed(2002)
-for i in range(10):
-    print(int(np.random.randint(low=0, high=10) * 3e5))
