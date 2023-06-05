@@ -63,6 +63,8 @@ def rebuild_state(get_state):
 	state = np.array([get_state[0], np.cos(get_state[1]), np.sin(get_state[1]), get_state[2], get_state[3]])
 	return state
 
+def rebuild_cheetah(get_state):
+	pass
 
 # references:  https://towardsdatascience.com/comparing-optimal-control-and-reinforcement-learning-using-the-cart-pole-swing-up-openai-gym-772636bc48f4
 # state matrix

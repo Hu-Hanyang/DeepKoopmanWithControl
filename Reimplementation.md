@@ -77,3 +77,7 @@ Notice: the training data is saved in "dm_train_data/under_mixed_PPO_control_300
 
 5.0 debugging
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug"
+
+6.0 train the cheetah with 
+train (train_steps = 100000, envode_dim = 30, Ktrain_samples = 10000, Ktest_samples = 5000)
+python Learn_Koopman_with_KlinearEig.py  --env="Cheetah-dm" --suffix="dm_control_cheetah1"

@@ -274,6 +274,13 @@ class data_collecter():
             self.Nstates = 5  # 5
             self.umin = self.env.action_space.low  # -1
             self.umax = self.env.action_space.high  # +1
+        elif self.env_name == "Cheetah-dm":
+            print(f"The environment is the dm_control CartPole with state.")
+            self.env = dmc2gym.make(domain_name="cheetah", task_name="run", seed=2022, from_pixels=False)  # seed=2022, visualize_reward=False, from_pixels=True
+            self.udim = self.env.action_space.shape[0]
+            self.Nstates = self.env.observation_space.shape[0]
+            self.umin = self.env.action_space.low  # -1
+            self.umax = self.env.action_space.high  # +1           
         else:  # CartPole-v1 from gym
             self.env = gym.make(env_name)
             self.env.seed(2022)
@@ -290,7 +297,7 @@ class data_collecter():
                 self.dt = 0.02  # from gym CartPole self.tau, seconds between state updates
             else:
                 self.observation_space = self.env.observation_space
-                self.dt = self.env.dt
+                self.dt = 0.02  # self.env.dt
 
     def random_state(self):
         if self.env_name.startswith("DampingPendulum"):
@@ -399,6 +406,27 @@ class data_collecter():
                     os.makedirs(path)
                 if traj_i % 100 == 0:
                     imageio.mimsave(f'{path}/traj{traj_i}.gif', frames, duration=duration)
+        elif self.env_name == "Cheetah-dm":
+            print(f"Generate invisible training data for {self.env_name} now!")
+            for traj_i in range(traj_num):
+                # frames = []
+                # duration = 0.2
+                # image0 = self.env.reset()
+                s0 = self.env.reset()
+                # frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
+                # s0 = self.env.physics.get_state() # s0.shape = (17,)
+                u10 = np.random.uniform(self.umin, self.umax)  # for PPO: self.controller.select_action(s0); others: self.controller(s0)
+                train_data[0,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
+                for i in range(1, steps+1):
+                    s0, r, done,_ = self.env.step(u10)
+                    # frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
+                    # s0 = self.env.physics.get_state()
+                    u10 = np.random.uniform(self.umin, self.umax)  # for PPO: self.controller.select_action(s0); others: self.controller(s0)
+                    train_data[i,traj_i,:]=np.concatenate([u10.reshape(-1),s0.reshape(-1)],axis=0).reshape(-1)
+                # path = f'/localhome/hha160/projects/DeepKoopmanWithControl/dm_train_data/{self.env_name}_random_{steps}'
+                # if not os.path.exists(path):
+                #     os.makedirs(path)
+                # imageio.mimsave(f'{path}/traj{traj_i}.gif', frames, duration=duration)
                 
         else:  # "CartPole"
             for traj_i in range(traj_num):

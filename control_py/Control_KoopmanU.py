@@ -19,6 +19,8 @@ from PIL import Image
 import imageio
 import glob
 from utility.control_swingup import ulqr, upid, rebuild_state
+import optuna
+
 
 
 Methods = ["KoopmanDerivative","KoopmanRBF",\
@@ -33,6 +35,8 @@ method_index = 4
 # env_name = "CartPole-v1"
 suffix = "dm_control_mixed_PPO"  # test, test1
 env_name = "CartPole-dm"
+# suffix = "dm_control_cheetah1"
+# env_name = "Cheetah-dm"
 # suffix = "Pendulum1_26"
 # env_name = "Pendulum-v1"
 # suffix = "5_2"
@@ -94,16 +98,17 @@ def Prepare_LQR(env_name):
     if env_name.startswith("CartPole"):  # "CartPole-v1", "CartPole-dm"
         if env_name == "CartPole-dm":
             # the state dimension is 5
-            x_ref = np.array([0.0, 0.0, 1.0, 0.0, 0.0])
+            x_ref = np.array([0.0, 1.0, 0.0, 0.0, 0.0])
             Q = np.zeros((NKoopman,NKoopman))
-            Q[1,1] = 0.01
-            Q[2,2] = 5.0
-            Q[3,3] = 5.0
-            Q[4,4] = 0.01
-            Q[5,5] = 0.01
+            Q[0,0] = 88.04075514505904  # 20.0
+            Q[1,1] = 62.70214154098979  # 50.0
+            Q[2,2] = 5.3204889006385  # 1.0
+            Q[3,3] = 7.555528923206882 # 15.0
+            Q[4,4] = 1.7230232577057794  # 10.0
+            # Q[5,5] = 0.01
             # Q[4,4] = 0.01  # I add this
             R = 0.001*np.eye(1)
-            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度sin，角度cos，cart速度，pole角速度]
+            reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度cos， 角度sin，cart速度，pole角速度]
         else:  # "CartPole-v1"
             Q = np.zeros((NKoopman,NKoopman))
             Q[1,1] = 0.01
@@ -111,6 +116,8 @@ def Prepare_LQR(env_name):
             Q[3,3] = 0.01
             R = 0.001*np.eye(1)
             reset_state=  [0.0, 1.0,-0.3, 0.3]  #  [cart position, pole angle, cart velocity,  pole angular velocity], original: [0.0, 0.0,-0.3, 0]
+    elif env_name == "Cheetah-dm":
+        pass
     elif env_name.startswith("Pendulum"):
         Q = np.zeros((NKoopman,NKoopman))
         Q[0,0] = 5.0
@@ -134,6 +141,36 @@ def Prepare_LQR(env_name):
     R = np.matrix(R)
     return Q,R,reset_state,x_ref
 
+def build_LQR(paras):
+    # the state dimension is 5
+    x_ref = np.array([0.0, 1.0, 0.0, 0.0, 0.0])
+    Q = np.zeros((NKoopman,NKoopman))
+    Q[0,0] = paras[0]
+    Q[1,1] = paras[1]
+    Q[2,2] = paras[2]
+    Q[3,3] = paras[3]
+    Q[4,4] = paras[4]
+    # Q[5,5] = 0.01
+    # Q[4,4] = 0.01  # I add this
+    R = 0.001*np.eye(1)
+    return Q, R, x_ref
+
+def cal_rewards(env, Kopt, x_ref, steps=300):
+    image0 = env.reset()  # for "CartPole-dm"
+    observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
+    x0 = np.matrix(Psi_o(observation,net))
+    x_ref_lift = Psi_o(x_ref, net)
+    rewards = 0.0
+    for i in range(steps):
+        u = -Kopt*(x0 - x_ref_lift)
+        next_image, reward, done, info = env.step(u[0,0])
+        # frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
+        observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
+        rewards += reward
+        x0 = np.matrix(Psi_o(observation, net))
+    return rewards
+    
+
 print("Let the control task begin: \n")
 Ad = state_dict['lA.weight'].cpu().numpy()
 Bd = state_dict['lB.weight'].cpu().numpy()
@@ -147,6 +184,9 @@ env.reset()
 Ad = np.matrix(Ad)
 Bd = np.matrix(Bd)
 print(f"The shape of the Ad is {Ad.shape}")
+
+
+
 Q, R, reset_state, x_ref = Prepare_LQR(env_name)
 print(f"The reference state is {x_ref}")
 print(f"The shape of the Q is {Q.shape}")
@@ -154,7 +194,6 @@ Kopt = lqr_regulator_k(Ad, Bd, Q, R)
 observation_list = []
 
 # Step3: choose the observation to circumvent the reset_state() function
-# observation = env.reset_state(reset_state)  # for "CartPole-v1"
 image0 = env.reset()  # for "CartPole-dm"
 observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
 
@@ -190,42 +229,57 @@ for i in range(steps):
     # time.sleep(0.1)
 env.close()
 
-observations = np.concatenate(observation_list,axis=1)
-u_list = np.array(u_list).reshape(-1)
-# print(u_list)
-time_history = np.arange(steps+1)*0.02  # env.dt
+# observations = np.concatenate(observation_list,axis=1)
+# u_list = np.array(u_list).reshape(-1)
+# # print(u_list)
+# time_history = np.arange(steps+1)*0.02  # env.dt
 print(f"In {steps} steps, the total rewards is {rewards}.")
 
-# for i in range(Nstate):
-#     plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
-# plt.grid(True)
-# plt.title("LQR Regulator")
-# plt.legend()
-# plt.show()
+# # for i in range(Nstate):
+# #     plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
+# # plt.grid(True)
+# # plt.title("LQR Regulator")
+# # plt.legend()
+# # plt.show()
 
 # Step 5: generate video while using "CartPole-dm"
 path = f'/localhome/hha160/projects/DeepKoopmanWithControl/control_py/ControlResults'
 if not os.path.exists(path):
     os.makedirs(path)
 imageio.mimsave(f'{path}/result{steps}.gif', frames, duration=duration)
-                
-# print(images[0].shape)
-# save images
-# for i in range(len(images)):
-#     image = images[i]
-#     image = Image.fromarray(image, "RGB")
-#     path = "/localhome/hha160/projects/DeepKoopmanWithControl/dm_images"
-#     if not os.path.exists(path):
-#         os.makedirs(path)
-#     image.save(f"{path}/x{i}.png")
 
-# img_array = []
-# for filename in glob.glob('/localhome/hha160/projects/DeepKoopmanWithControl/dm_images/*.png'):
-#     img = cv2.imread(filename)
-#     height, width, layers = img.shape
-#     size = (width,height)
-#     img_array.append(img)
-# out = cv2.VideoWriter('videos_dm/CartPole-dm.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, size)
-# for i in range(len(img_array)):
-#     out.write(img_array[i])
-# out.release()
+# # test the best Q matrix:
+# best_paras = [0.0, 0.0, 1.0, 0.0, 0.0]
+# best_reward = 0.0
+# for a in range(15, 25):
+#     for b in range(45, 61):
+#         # for c in range(5):
+#         for d in range(5, 20):
+#             for e in range(5, 16):
+#                 paras = [a, b, 1.0, d, e]
+#                 Q, R, x_ref = build_LQR(paras)
+#                 Kopt = lqr_regulator_k(Ad, Bd, Q, R)
+#                 rewards = cal_rewards(env, Kopt, x_ref, steps=300)
+#                 if best_reward < rewards:
+#                     best_paras = paras
+#                     best_reward = rewards
+# print(f"The best parameters of Q are {best_paras} and its corresponding rewards is {best_reward}.")
+
+
+# def objective(trial):
+#     a = trial.suggest_float("a", 0.0, 100.0)
+#     b = trial.suggest_float("b", 0.0, 100.0)
+#     c = trial.suggest_float("c", 0.0, 100.0)
+#     d = trial.suggest_float("d", 0.0, 100.0)
+#     e  = trial.suggest_float("e", 0.0, 100.0)
+
+#     paras = [a, b, c, d, e]
+
+#     Q, R, x_ref = build_LQR(paras)
+#     Kopt = lqr_regulator_k(Ad, Bd, Q, R)
+#     rewards = cal_rewards(env, Kopt, x_ref, steps=300)
+#     return rewards
+
+
+# study = optuna.create_study(study_name='koop', direction='maximize')
+# study.optimize(objective, n_trials=1000, n_jobs=1, show_progress_bar=True)
