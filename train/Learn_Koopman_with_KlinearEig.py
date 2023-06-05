@@ -144,7 +144,7 @@ def train(env_name, train_steps = 20000,suffix="",all_loss=0,\
     #train
     eval_step = 1000
     best_loss = 1000.0
-    best_state_dict = {}
+    current_state_dict = {}
     logdir = "../Data/"+suffix+"/KoopmanU_"+env_name+"layer{}_edim{}_eloss{}_gamma{}_aloss{}_samples{}".format(layer_depth,encode_dim,e_loss,gamma,all_loss,Ktrain_samples)
     if not os.path.exists( "../Data/"+suffix):
         os.makedirs( "../Data/"+suffix)
@@ -179,16 +179,16 @@ def train(env_name, train_steps = 20000,suffix="",all_loss=0,\
                 loss = loss.detach().cpu().numpy()
                 writer.add_scalar('Eval/Kloss',Kloss,i)
                 writer.add_scalar('Eval/Eloss',Eloss,i)
-                writer.add_scalar('Eval/best_loss',best_loss,i)
+                # writer.add_scalar('Eval/best_loss',best_loss,i)
                 writer.add_scalar('Eval/loss',loss,i)
-                if loss<best_loss:
-                    best_loss = copy(Kloss)
-                    best_state_dict = copy(net.state_dict())
-                    Saved_dict = {'model':best_state_dict,'layer':layers}
-                    torch.save(Saved_dict,logdir+".pth")
-                print("Step:{} Eval-loss{} K-loss:{} ".format(i,loss,Kloss))
+                # if loss<best_loss:
+                # best_loss = copy(Kloss)
+                current_state_dict = copy(net.state_dict())
+                Saved_dict = {'model':current_state_dict,'layer':layers}
+                torch.save(Saved_dict, logdir + f"{i}th_epoch.pth")
+                print("Step:{} Eval-loss{} K-loss:{} ".format(i, loss, Kloss))
             # print("-------------END-------------")
-        writer.add_scalar('Eval/best_loss',best_loss,i)
+        # writer.add_scalar('Eval/best_loss',best_loss,i)
         # if (time.process_time()-start_time)>=210*3600:
         #     print("time out!:{}".format(time.clock()-start_time))
         #     break

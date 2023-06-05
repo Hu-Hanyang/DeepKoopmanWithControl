@@ -80,3 +80,7 @@ python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_contro
 
 5.1 change the gamma from 0.99 to 1.00
 python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug1"
+
+
+for saving models:
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug"
