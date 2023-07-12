@@ -75,9 +75,81 @@ python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_contro
 
 Notice: the training data is saved in "dm_train_data/under_mixed_PPO_control_300" 
 
-5.0 debugging
-python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug"
-
+<!-- 5.0 debugging
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_debug" -->
+<!-- 
 6.0 train the cheetah with 
 train (train_steps = 100000, envode_dim = 30, Ktrain_samples = 10000, Ktest_samples = 5000)
-python Learn_Koopman_with_KlinearEig.py  --env="Cheetah-dm" --suffix="dm_control_cheetah1"
+python Learn_Koopman_with_KlinearEig.py  --env="Cheetah-dm" --suffix="dm_control_cheetah1" -->
+
+Final: saving model during training
+train_steps = 20000, Ktrain_samples=5000, Ktest_samples = 2000, Ksteps = 300
+python Learn_Koopman_with_KlinearEig.py  --env="CartPole-dm" --suffix="dm_control_mixed_PPO_final"
+
+5th June tasks:
+Traing model1 (step 2000th): KoopmanU_CartPole-dmlayer3_edim20_eloss0_gamma0.8_aloss1_samples50001999th_step.pth  
+Best value: 19.15
+Best para: 
+{'a': 0.08, 'b': 85.32, 'c': 2.57, 'd': 0.13, 'e': 0.04}
+Manual value1: 18.86
+Manual para1:
+{'a': 0.01, 'b': 10.0, 'c': 10.0, 'd': 0.01, 'e': 0.01}
+Manual value2: 17.84
+Manual para2:
+{'a': 10.0, 'b': 50.0, 'c': 50.0, 'd': 1.0, 'e': 1.0}
+
+Traing model2 (step 4000th): KoopmanU_CartPole-dmlayer3_edim20_eloss0_gamma0.8_aloss1_samples50003999th_step.pth  
+Best value: 19.49
+Best para: 
+{'a': 10.33, 'b': 71.31, 'c': 0.03, 'd': 0.14, 'e': 0.06}
+Manual value1: 13.24
+Manual para1:
+{'a': 0.01, 'b': 10.0, 'c': 10.0, 'd': 0.01, 'e': 0.01}
+Manual value2: 12.38
+Manual para2: 12.38
+{'a': 10.0, 'b': 50.0, 'c': 50.0, 'd': 1.0, 'e': 1.0}
+
+Traing model3 (step 6000th): KoopmanU_CartPole-dmlayer3_edim20_eloss0_gamma0.8_aloss1_samples50005999th_step.pth  
+Best value: 32.63
+Best para: 
+{'a': 18.46, 'b': 68.45, 'c': 1.75, 'd': 10.79, 'e': 0.01}
+Manual value1: 27.91
+Manual para1:
+{'a': 0.01, 'b': 10.0, 'c': 10.0, 'd': 0.01, 'e': 0.01}
+Manual value2: 20.42
+Manual para2:
+{'a': 10.0, 'b': 50.0, 'c': 50.0, 'd': 1.0, 'e': 1.0}
+
+Traing model4 (step 8000th): KoopmanU_CartPole-dmlayer3_edim20_eloss0_gamma0.8_aloss1_samples50007999th_step.pth  
+Best value: 39.71
+Best para: 
+{'a': 38.13, 'b': 91.22, 'c': 78.16, 'd': 1.44, 'e': 0.09}
+Manual value1: 27.91
+Manual para1:
+{'a': 0.01, 'b': 10.0, 'c': 10.0, 'd': 0.01, 'e': 0.01}
+Manual value2: 20.42
+Manual para2:
+{'a': 10.0, 'b': 50.0, 'c': 50.0, 'd': 1.0, 'e': 1.0}
+
+Final model: "KoopmanU_CartPole-dmlayer3_edim20_eloss0_gamma0.8_aloss1_samples500019999th_step.pth"
+Best value: 57.00
+Best para: 
+{'a': 84.12, 'b': 62.07, 'c': 65.79, 'd': 0.04, 'e': 0.04}
+Manual value1: 33.10
+Manual para1:
+{'a': 0.01, 'b': 10.0, 'c': 10.0, 'd': 0.01, 'e': 0.01}
+Manual value2: 40.00
+Manual para2:
+{'a': 10.0, 'b': 50.0, 'c': 50.0, 'd': 1.0, 'e': 1.0}
+Manual value3: 21.41
+Manual para3:
+{'a': 10.0, 'b': 60.0, 'c': 60.0, 'd': 0.01, 'e': 0.01}
+Manual value4: 39.00
+Manual para4:
+{'a': 10.0, 'b': 60.0, 'c': 60.0, 'd': 1.0, 'e': 1.0}
+Manual value5: 37.61
+Manual para5:
+{'a': 10.0, 'b': 60.0, 'c': 60.0, 'd': 10, 'e': 10}
+Manual value6: 37.82
+Manual para6:
+{'a': 10.0, 'b': 60.0, 'c': 60.0, 'd': 10, 'e': 10 with other diagnals=0.1} 

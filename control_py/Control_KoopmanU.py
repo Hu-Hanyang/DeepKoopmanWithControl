@@ -33,7 +33,8 @@ method_index = 4
 # Step1: choose the env and suffix
 # suffix = "test"
 # env_name = "CartPole-v1"
-suffix = "dm_control_mixed_PPO"  # test, test1
+# suffix = "dm_control_mixed_PPO"  # test, test1
+suffix = "dm_control_mixed_PPO_final"
 env_name = "CartPole-dm"
 # suffix = "dm_control_cheetah1"
 # env_name = "Cheetah-dm"
@@ -60,6 +61,10 @@ elif method.endswith("KoopmanU"):
 for file in os.listdir(root_path):
     if file.startswith(method+"_") and file.endswith(".pth"):
         model_path = file  
+
+model_path = "KoopmanU_CartPole-dmlayer3_edim20_eloss0_gamma0.8_aloss1_samples500019999th_step.pth"
+print(f"The model_path is {model_path}.")
+print(f"The model we choose is {root_path} + / {model_path}")
 Data_collect = data_collecter(env_name)
 udim = Data_collect.udim
 Nstate = Data_collect.Nstates  # Data_collect.Nstates
@@ -100,13 +105,25 @@ def Prepare_LQR(env_name):
             # the state dimension is 5
             x_ref = np.array([0.0, 1.0, 0.0, 0.0, 0.0])
             Q = np.zeros((NKoopman,NKoopman))
-            Q[0,0] = 88.04075514505904  # 20.0
-            Q[1,1] = 62.70214154098979  # 50.0
-            Q[2,2] = 5.3204889006385  # 1.0
-            Q[3,3] = 7.555528923206882 # 15.0
-            Q[4,4] = 1.7230232577057794  # 10.0
-            # Q[5,5] = 0.01
-            # Q[4,4] = 0.01  # I add this
+            # Q = 0.1 * np.ones((NKoopman,NKoopman))
+            # Best para
+            Q[0,0] = 10.0  # 84.12  # 
+            Q[1,1] = 60.0  # 62.07  # 50.0
+            Q[2,2] = 60.0  # 65.79  # 1.0
+            Q[3,3] = 10 # 0.04 # 15.0
+            Q[4,4] = 10#   # 10.0            
+            # # Manual para1
+            # Q[0,0] =0.01  # 84.12  # 
+            # Q[1,1] = 10.0  # 62.07  # 50.0
+            # Q[2,2] = 10.0  # 65.79  # 1.0
+            # Q[3,3] = 0.01 # 0.04 # 15.0
+            # Q[4,4] = 0.01 #   # 10.0
+            # # Manual para2
+            # Q[0,0] =10.0  # 84.12  # 
+            # Q[1,1] = 50.0  # 62.07  # 50.0
+            # Q[2,2] = 50.0  # 65.79  # 1.0
+            # Q[3,3] = 1.0 # 0.04 # 15.0
+            # Q[4,4] = 1.0 #   # 10.0
             R = 0.001*np.eye(1)
             reset_state=  [0.0, 0.96,-0.3, 0, 0]  # [cart位置，角度cos， 角度sin，cart速度，pole角速度]
         else:  # "CartPole-v1"
@@ -177,6 +194,7 @@ Bd = state_dict['lB.weight'].cpu().numpy()
 
 # Step2: name the video
 env = Data_collect.env
+# env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, visualize_reward=False, from_pixels=True)  # seed=2022, visualize_reward=False, from_pixels=True
 # env = dmc2gym.make(domain_name='cartpole', task_name='swingup', seed=2022, from_pixels=False)  # seed=2022, visualize_reward=False, from_pixels=True
 # env = gym.wrappers.RecordVideo(env, video_folder='videos_dm', video_length=200, name_prefix="dm")  # DKUC
 env.reset()
@@ -190,6 +208,7 @@ print(f"The shape of the Ad is {Ad.shape}")
 Q, R, reset_state, x_ref = Prepare_LQR(env_name)
 print(f"The reference state is {x_ref}")
 print(f"The shape of the Q is {Q.shape}")
+
 Kopt = lqr_regulator_k(Ad, Bd, Q, R)
 observation_list = []
 
@@ -208,63 +227,47 @@ u_list = []
 steps = 300
 # umax = 100
 rewards = 0.0
-frames = []  # Step 4: to save the image of "CartPole-dm"
-duration = 0.2
-frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
+
+# Step 4: to save the image of "CartPole-dm"
+# frames = []  
+# duration = 0.2
+# frames.append(Image.fromarray(image0.transpose(1, 2, 0), "RGB"))
 
 for i in range(steps):
     # images.append(env.render(mode="rgb_array"))
     u = -Kopt*(x0 - x_ref_lift)
     # u = max(-umax,min(umax,u[0,0]))
     # print(type(u[0,0]),type(u))
-    next_image, reward, done, info = env.step(u[0,0])
-    frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
-    observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
+    observation, reward, done, info = env.step(u[0,0])
+    # frames.append(Image.fromarray(next_image.transpose(1, 2, 0), "RGB"))
+    # observation = rebuild_state(env.physics.get_state()) # s0.shape = (5,)
 
     rewards += reward
     x0 = np.matrix(Psi_o(observation, net))
     # x0 = Ad*x0+Bd*u
-    observation_list.append(x0[:Nstate].reshape(-1,1))
+    # observation_list.append(x0[:Nstate].reshape(-1,1))
     u_list.append(u)
     # time.sleep(0.1)
 env.close()
 
-# observations = np.concatenate(observation_list,axis=1)
-# u_list = np.array(u_list).reshape(-1)
-# # print(u_list)
-# time_history = np.arange(steps+1)*0.02  # env.dt
+observations = np.concatenate(observation_list,axis=1)
+u_list = np.array(u_list).reshape(-1)
+# print(u_list)
+time_history = np.arange(steps+1)*0.02  # env.dt
 print(f"In {steps} steps, the total rewards is {rewards}.")
 
-# # for i in range(Nstate):
-# #     plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
-# # plt.grid(True)
-# # plt.title("LQR Regulator")
-# # plt.legend()
-# # plt.show()
+# for i in range(Nstate):
+#     plt.plot(time_history, observations[i,:].reshape(-1,1), label="x{}".format(i))
+# plt.grid(True)
+# plt.title("LQR Regulator")
+# plt.legend()
+# plt.show()
 
-# Step 5: generate video while using "CartPole-dm"
-path = f'/localhome/hha160/projects/DeepKoopmanWithControl/control_py/ControlResults'
-if not os.path.exists(path):
-    os.makedirs(path)
-imageio.mimsave(f'{path}/result{steps}.gif', frames, duration=duration)
-
-# # test the best Q matrix:
-# best_paras = [0.0, 0.0, 1.0, 0.0, 0.0]
-# best_reward = 0.0
-# for a in range(15, 25):
-#     for b in range(45, 61):
-#         # for c in range(5):
-#         for d in range(5, 20):
-#             for e in range(5, 16):
-#                 paras = [a, b, 1.0, d, e]
-#                 Q, R, x_ref = build_LQR(paras)
-#                 Kopt = lqr_regulator_k(Ad, Bd, Q, R)
-#                 rewards = cal_rewards(env, Kopt, x_ref, steps=300)
-#                 if best_reward < rewards:
-#                     best_paras = paras
-#                     best_reward = rewards
-# print(f"The best parameters of Q are {best_paras} and its corresponding rewards is {best_reward}.")
-
+# # Step 5: generate video while using "CartPole-dm"
+# path = f'/localhome/hha160/projects/DeepKoopmanWithControl/control_py/ControlResults'
+# if not os.path.exists(path):
+#     os.makedirs(path)
+# imageio.mimsave(f'{path}/result{steps}.gif', frames, duration=duration)
 
 # def objective(trial):
 #     a = trial.suggest_float("a", 0.0, 100.0)
@@ -282,4 +285,6 @@ imageio.mimsave(f'{path}/result{steps}.gif', frames, duration=duration)
 
 
 # study = optuna.create_study(study_name='koop', direction='maximize')
-# study.optimize(objective, n_trials=1000, n_jobs=1, show_progress_bar=True)
+# study.optimize(objective, n_trials=2000, n_jobs=1, show_progress_bar=True)
+# print(f"The best parameters are {study.best_params}")
+# print(f"The best value is {study.best_value}")
